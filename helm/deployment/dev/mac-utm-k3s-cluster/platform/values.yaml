@@ -1,0 +1,6 @@
+storageClass:
+  enabled: true
+  name: homelab-pvc-storage
+  provisioner: microk8s.io/hostpath
+  reclaimPolicy: Delete
+  volumeBindingMode: WaitForFirstConsumer

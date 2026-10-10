@@ -1,0 +1,39 @@
+image:
+  repository: traefik
+  tag: v3.7.14
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+
+namespace: hlab-networking
+
+ports:
+  web:
+    containerPort: 80
+    hostPort: 80
+  websecure:
+    containerPort: 443
+    hostPort: 443
+  api:
+    containerPort: 8080
+
+ingressClass:
+  name: traefik
+  isDefaultClass: false
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+podAnnotations: {}
+
+nodeSelector: {}
+
+tolerations:
+  - operator: Exists

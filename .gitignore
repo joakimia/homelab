@@ -57,3 +57,11 @@ TestResult.xml
 nunit-*.xml
 
 *.pem
+
+# Local kubeconfigs and generated cluster connection files contain credentials.
+/.local/
+
+*.iso
+
+# Finder metadata
+.DS_Store
