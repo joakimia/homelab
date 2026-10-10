@@ -23,10 +23,11 @@ The cloud-init config updates Debian, installs MicroK8s plus Helm and kubectl, e
 
 ## Provision a fresh Debian VM over SSH
 
-Install Debian 12 in UTM with the `debian` user and OpenSSH server selected. Keep UTM Shared Network enabled so the VM can reach package mirrors. Then run the helper from this directory on macOS:
+Install Debian 12 in UTM with the `debian` user and OpenSSH server selected. Keep UTM Shared Network enabled so the VM can reach package mirrors. Find the guest IP with `ip -4 -o addr show dev enp0s1` in its console, then set `VM_IP` to that address on the Mac:
 
 ```sh
-./provision-cloud-init-via-ssh.sh control-plane-node debian@192.168.64.3
+VM_IP=192.168.64.6
+./provision-cloud-init-via-ssh.sh control-plane-node "debian@$VM_IP"
 ```
 
 The helper generates the seed ISO, copies it and a small runner to Debian, installs `cloud-init`, stages the NoCloud files, and runs cloud-init. It may prompt for SSH and sudo passwords. Change the target IP if UTM assigned a different address. When provisioning finishes, check `cloud-init status --long`, `microk8s status --wait-ready`, `kubectl get pods -A`, `helm version`, and `k9s version`.
@@ -46,7 +47,8 @@ If the Debian installation does not have cloud-init, you can provision it direct
 From this directory, run:
 
 ```sh
-./provision-via-ssh.sh control-plane-node debian@192.168.64.3
+VM_IP=192.168.64.6
+./provision-via-ssh.sh control-plane-node "debian@$VM_IP"
 ```
 
 The default hostname is `cp0`; for the worker, use `worker-node` and it defaults to `wk0`. You can pass a different hostname as the third argument. After provisioning finishes, log out and back in so the `microk8s` group membership applies, then run the checks above.

@@ -1,6 +1,8 @@
 # Homelab
 
-A personal homelab repository for learning infrastructure, Kubernetes, and deployment automation. The initial environment is a Debian 12 virtual machine in UTM running MicroK8s; a later goal is to run RKE2 on dedicated hardware.
+A personal homelab repository focused on learning and building the infrastructure, DevOps, and CI/CD foundations behind a homelab. It covers the underlying platform features and Kubernetes workload deployment patterns. Homelab applications are hosted privately in the lab and generally live in their own repositories, with their own pipelines and Helm charts; this repository documents the shared infrastructure and repeatable deployment structure they build on.
+
+The current development environment is a Debian 12 virtual machine in UTM running MicroK8s. Its `192.168.64.x` addressing and local networking notes apply only to that UTM setup. Running RKE2 on dedicated hardware is a later goal and will use network, address, and DNS choices suited to the home LAN.
 
 ## Current focus
 
@@ -12,10 +14,10 @@ The repository is under active development. The UTM profile is the first working
 
 ## Where things live
 
-- `hosting-infratructure/on-premises/debian12/microk8s/` — cloud-init seed generation and Debian provisioning helpers.
+- `infratructure/on-premises/debian12/microk8s/` — cloud-init seed generation and Debian provisioning helpers.
 - `helm/charts/` — individual Helm charts.
 - `helm/deployment/` — environment-specific groups of charts and install scripts.
 - `docs/` — architecture notes, user guides, and operational runbooks.
 - `tests/` — validation work as it is added.
 
-Start with the [MicroK8s provisioning guide](hosting-infratructure/on-premises/debian12/microk8s/README.md), then see the [UTM development deployment](helm/deployment/dev/mac-utm-k3s-cluster/README.md).
+Start with the [MicroK8s provisioning guide](infratructure/on-premises/debian12/microk8s/README.md), then see the [UTM development deployment](helm/deployment/dev/mac-utm-k3s-cluster/README.md).
