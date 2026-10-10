@@ -1,0 +1,29 @@
+namespace: hlab-frontend-apps
+
+image:
+  repository: caddy
+  tag: 2.11.6-alpine
+  pullPolicy: IfNotPresent
+
+host: homepage.homelab.com
+
+service:
+  port: 80
+  containerPort: 8080
+
+replicaCount: 1
+
+content: |
+  <!doctype html>
+  <html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Homelab</title>
+  </head>
+  <body>
+    <h1>Homelab</h1>
+    <p>Welcome. This page is served from Kubernetes through Traefik.</p>
+    <ul><li><a href="http://pgadmin.homelab.com">pgAdmin</a></li></ul>
+  </body>
+  </html>

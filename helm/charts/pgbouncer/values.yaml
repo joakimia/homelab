@@ -1,0 +1,31 @@
+namespace: hlab-database
+
+image:
+  repository: edoburu/pgbouncer
+  tag: v1.26.0-p0
+  pullPolicy: IfNotPresent
+
+database:
+  host: postgres
+  port: 5432
+  existingSecret: postgres-credentials
+  usernameSecretKey: POSTGRES_USER
+  passwordSecretKey: POSTGRES_PASSWORD
+  databaseSecretKey: POSTGRES_DB
+
+pool:
+  mode: transaction
+  defaultPoolSize: 10
+
+service:
+  port: 6432
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi

@@ -1,0 +1,9 @@
+apiVersion: v2
+name: pgbouncer
+description: PgBouncer connection pool for the homelab PostgreSQL instance.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 1.26.0

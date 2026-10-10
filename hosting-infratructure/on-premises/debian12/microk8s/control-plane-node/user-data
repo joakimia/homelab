@@ -1,0 +1,42 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+users:
+  - default
+
+packages:
+  - ca-certificates
+  - curl
+  - snapd
+
+runcmd:
+  - [systemctl, enable, --now, snapd.socket]
+  - [sh, -c, 'ln -sfn /var/lib/snapd/snap /snap']
+  - [snap, wait, system, seed.loaded]
+  - [snap, install, microk8s, --classic]
+  - [snap, install, helm, --classic]
+  - [snap, install, kubectl, --classic]
+  - |
+    set -e
+    case "$(dpkg --print-architecture)" in
+      amd64) k9s_asset=k9s_Linux_amd64.tar.gz ;;
+      arm64) k9s_asset=k9s_Linux_arm64.tar.gz ;;
+      *) echo "Unsupported architecture for k9s" >&2; exit 1 ;;
+    esac
+    k9s_tmp=$(mktemp -d)
+    k9s_release_url=https://github.com/derailed/k9s/releases/latest/download
+    curl -fsSL --retry 3 "$k9s_release_url/checksums.sha256" -o "$k9s_tmp/checksums.sha256"
+    curl -fsSL --retry 3 "$k9s_release_url/$k9s_asset" -o "$k9s_tmp/$k9s_asset"
+    k9s_checksum=$(awk -v asset="$k9s_asset" '$2 == asset || $2 == "*" asset {print $1; exit}' "$k9s_tmp/checksums.sha256")
+    test "${#k9s_checksum}" -eq 64
+    printf '%s  %s\n' "$k9s_checksum" "$k9s_tmp/$k9s_asset" | sha256sum --check --status
+    tar -xzf "$k9s_tmp/$k9s_asset" -C "$k9s_tmp" k9s
+    install -m 0755 "$k9s_tmp/k9s" /usr/local/bin/k9s
+    rm -rf "$k9s_tmp"
+  - [usermod, -aG, microk8s, debian]
+  - [/snap/bin/microk8s, status, --wait-ready]
+  - [install, -d, -o, debian, -g, debian, -m, '0700', /home/debian/.kube]
+  - [sh, -c, '/snap/bin/microk8s config > /home/debian/.kube/config']
+  - [chown, debian:debian, /home/debian/.kube/config]
+  - [chmod, '0600', /home/debian/.kube/config]

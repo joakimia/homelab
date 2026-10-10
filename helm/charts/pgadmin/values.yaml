@@ -1,0 +1,25 @@
+namespace: hlab-frontend-apps
+
+image:
+  repository: dpage/pgadmin4
+  tag: "9.17"
+  pullPolicy: IfNotPresent
+
+host: pgadmin.homelab.com
+
+existingSecret: pgadmin-credentials
+emailSecretKey: PGADMIN_DEFAULT_EMAIL
+passwordSecretKey: PGADMIN_DEFAULT_PASSWORD
+
+service:
+  port: 80
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 750m
+    memory: 768Mi

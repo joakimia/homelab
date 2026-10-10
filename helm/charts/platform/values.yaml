@@ -1,0 +1,76 @@
+# Namespace names reflect the intended workload boundaries. Keep future
+# namespaces disabled until a chart or workload is ready to use them.
+namespaces:
+  networking:
+    name: hlab-networking
+    purpose: networking
+    podSecurityEnforce: privileged
+    enabled: true
+  platform:
+    name: hlab-platform
+    purpose: platform
+    podSecurityEnforce: baseline
+    enabled: false
+  observability:
+    name: hlab-observability
+    purpose: observability
+    podSecurityEnforce: baseline
+    enabled: false
+  frontend:
+    name: hlab-frontend-apps
+    purpose: frontend
+    podSecurityEnforce: baseline
+    enabled: true
+  backendApi:
+    name: hlab-backend-api-apps
+    purpose: backend-api
+    podSecurityEnforce: baseline
+    enabled: false
+  backgroundWorkers:
+    name: hlab-backend-background-worker-apps
+    purpose: background-workers
+    podSecurityEnforce: baseline
+    enabled: false
+  database:
+    name: hlab-database
+    purpose: database
+    podSecurityEnforce: baseline
+    enabled: true
+  filestore:
+    name: hlab-filestore
+    purpose: filestore
+    podSecurityEnforce: baseline
+    enabled: false
+  tools:
+    name: hlab-tools
+    purpose: tools
+    podSecurityEnforce: baseline
+    enabled: false
+
+networkPolicies:
+  enabled: true
+  dns:
+    namespace: kube-system
+    podSelector:
+      k8s-app: kube-dns
+  traefik:
+    podSelector:
+      app.kubernetes.io/name: traefik
+  pgadmin:
+    podSelector:
+      app.kubernetes.io/name: pgadmin
+  pgbouncer:
+    podSelector:
+      app.kubernetes.io/name: pgbouncer
+  postgres:
+    podSelector:
+      app.kubernetes.io/name: postgres
+
+# Environment profiles can provide a cluster-specific provisioner behind a
+# stable storage class name used by application charts.
+storageClass:
+  enabled: false
+  name: homelab-pvc-storage
+  provisioner: microk8s.io/hostpath
+  reclaimPolicy: Delete
+  volumeBindingMode: WaitForFirstConsumer
