@@ -8,4 +8,4 @@ Supports cloud-init setup and installation on
 - Default Debian VM image
 
 ## RKE2
-- Default Debian VM image
+- Default Debian VM image   

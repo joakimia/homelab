@@ -9,7 +9,7 @@ Use this skill when starting from a fresh Debian VM, changing the cloud-init see
 
 ## Workflow
 
-1. Read `AGENTS.md` and `hosting-infratructure/on-premises/debian12/microk8s/README.md` first. Treat the documented Mac-to-VM flow as canonical.
+1. Read `AGENTS.md` and `infratructure/on-premises/debian12/microk8s/README.md` first. Treat the documented Mac-to-VM flow as canonical.
 2. Confirm the guest address, Debian username, UTM shared-network access, and which profile is being provisioned. Never assume a prior VM or package installation still exists.
 3. Remember that a minimal Debian install may not include cloud-init. The SSH helper installs/stages it and the NoCloud seed; a seed ISO is not a bootable Debian installer.
 4. Use the repository scripts rather than copying a second, hand-maintained bootstrap. Ask the operator to enter SSH/sudo credentials interactively; never put passwords in command arguments, scripts, logs, or Git.

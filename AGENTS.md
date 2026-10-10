@@ -8,6 +8,8 @@ The first goal is to install a clean Debian 12 VM in UTM, provide a NoCloud clou
 
 The current UTM environment is MicroK8s even though its profile directory is named `helm/deployment/dev/mac-utm-k3s-cluster`. Confirm the active Kubernetes context and actual cluster before making changes; do not infer the distribution from the directory name.
 
+UTM's `192.168.64.x` network and its local address/DNS settings are specific to that VM profile. Do not carry them into the future RKE2-on-hardware profile; define addressing, DNS, and routing for the physical home LAN there.
+
 The current learning stack is platform namespaces and policies, Traefik, PostgreSQL, PgBouncer, pgAdmin, and a Caddy homepage. The local ingress routes are HTTP-only. A hostname in an Ingress does not create DNS: clients need a DNS record or a local hosts entry, and HTTPS also needs an intentional TLS configuration and trusted certificate.
 
 ## Working rules
@@ -25,7 +27,7 @@ The current learning stack is platform namespaces and policies, Traefik, Postgre
 
 ## Repository layout
 
-- `hosting-infratructure/on-premises/debian12/microk8s/` — Debian and MicroK8s provisioning.
+- `infratructure/on-premises/debian12/microk8s/` — Debian and MicroK8s provisioning.
 - `helm/charts/` — individual application and platform charts.
 - `helm/deployment/` — profiles that group charts for an environment.
 - `docs/` — architecture notes, user guides, and runbooks.
