@@ -1,11 +1,7 @@
-Scripts and procedures for setting up a complete k8s cluster.
+# On-premises nodes
 
-After completing this guide, you can start to deploy via `helm upgrade`.
+Provisioning for Kubernetes nodes on Debian 12, with cloud-init over SSH. See [debian12/README.md](debian12/README.md).
 
-Supports cloud-init setup and installation on
-
-## Minikube
-- Default Debian VM image
-
-## RKE2
-- Default Debian VM image
+- `debian12/microk8s/`: the current UTM learning cluster.
+- `debian12/rke2/`: work in progress, for physical hardware later.
+- `debian12/jumpbox/`: work in progress. The entry point outside the cluster, with tools, the provisioning bundle, and a local registry.

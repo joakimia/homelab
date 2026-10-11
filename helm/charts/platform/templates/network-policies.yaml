@@ -36,10 +36,10 @@ spec:
         - ipBlock:
             cidr: 0.0.0.0/0
       ports:
+        {{- range .Values.networkPolicies.traefik.ports }}
         - protocol: TCP
-          port: 80
-        - protocol: TCP
-          port: 443
+          port: {{ . }}
+        {{- end }}
 ---
 {{- end }}
 {{- if $frontend.enabled }}

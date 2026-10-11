@@ -56,6 +56,8 @@ networkPolicies:
   traefik:
     podSelector:
       app.kubernetes.io/name: traefik
+    # Traefik's container ports (web and websecure) that may receive outside traffic.
+    ports: [8080, 8443]
   pgadmin:
     podSelector:
       app.kubernetes.io/name: pgadmin

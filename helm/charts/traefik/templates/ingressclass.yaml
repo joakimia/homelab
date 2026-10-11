@@ -1,0 +1,13 @@
+{{- $_ := required "ingressClass.name is required" .Values.ingressClass.name -}}
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: {{ .Values.ingressClass.name }}
+  labels:
+    {{- include "traefik.labels" . | nindent 4 }}
+  {{- if .Values.ingressClass.isDefaultClass }}
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+  {{- end }}
+spec:
+  controller: traefik.io/ingress-controller

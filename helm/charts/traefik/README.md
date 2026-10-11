@@ -1,15 +1,29 @@
 # Traefik chart
 
-Installs Traefik as a Deployment in `hlab-networking`, with `replicaCount: 1` by default. It watches standard Kubernetes `Ingress` resources and publishes HTTP/HTTPS on host ports 80 and 443 on the selected node. This keeps the browser URL on ordinary ports. Each replica needs a separate node because the host ports can only be bound once per node; scale it only when additional nodes are available.
+Runs Traefik as the Ingress controller in `hlab-networking`. It watches Kubernetes `Ingress` resources with `ingressClassName: traefik` and listens on host ports **8080** (HTTP) and **8443** on the node, so URLs include the port, for example `http://homepage.homelab.com:8080/`. Its dashboard/ping entrypoint uses 9000 inside the pod only. The ports are unprivileged, so the container needs no added capabilities.
 
-Install the platform chart first so the namespace and its network policies exist:
+## Install
+
+Normally installed by the cluster profile's `deploy.sh` after `platform`. To install it alone:
 
 ```sh
-helm upgrade --install platform ./helm/charts/platform --namespace default
-helm upgrade --install traefik ./helm/charts/traefik \
-  --namespace hlab-networking
+./scripts/install.sh --values ../../deployment/dev/mac-utm-microk8s-cluster/traefik/values.yaml --wait
 ```
 
-An app chart should create an `Ingress` with `spec.ingressClassName: traefik`. For example, pgAdmin's DNS name must resolve to a node IP, and its Service must be reachable on the configured target port. The chart does not install DNS, publish the Traefik dashboard, or configure TLS certificates. Port 80 works for the initial local HTTP check; add certificate management before relying on HTTPS.
+No Secrets are needed. TLS certificates and DNS are not configured; the local routes are HTTP only.
 
-Override `replicaCount`, `namespace`, image version, ports, resources, node selector, and tolerations in a cluster-specific values file. Host ports 80 and 443 must be available on each node where Traefik is scheduled.
+## Values
+
+| Value | Default | Purpose |
+|---|---|---|
+| `ports.web` | `8080` / host `8080` | HTTP entrypoint. |
+| `ports.websecure` | `8443` / host `8443` | HTTPS entrypoint (no certificates yet). |
+| `ports.api.containerPort` | `9000` | Dashboard and ping, not exposed. |
+| `ingressClass.name` / `isDefaultClass` | `traefik` / `false` | IngressClass created by the chart. |
+| `replicaCount` | `1` | One replica per node; host ports can only be bound once per node. |
+
+If you change the web/websecure ports, update `networkPolicies.traefik.ports` in the platform chart too.
+
+## Templates
+
+`serviceaccount.yaml`, `clusterrole.yaml`, `clusterrolebinding.yaml`, `ingressclass.yaml`, `deployment.yaml`, `service.yaml`, `_helpers.tpl`.

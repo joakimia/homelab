@@ -59,7 +59,7 @@ nunit-*.xml
 *.pem
 
 # Local kubeconfigs and generated cluster connection files contain credentials.
-/.local/
+.local/
 
 *.iso
 

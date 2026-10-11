@@ -7,15 +7,17 @@ nameOverride: ""
 
 namespace: hlab-networking
 
+# Unprivileged ports: HTTP on 8080 and HTTPS on 8443 on the node, the dashboard/ping
+# entrypoint on 9000 inside the pod only.
 ports:
   web:
-    containerPort: 80
-    hostPort: 80
-  websecure:
-    containerPort: 443
-    hostPort: 443
-  api:
     containerPort: 8080
+    hostPort: 8080
+  websecure:
+    containerPort: 8443
+    hostPort: 8443
+  api:
+    containerPort: 9000
 
 ingressClass:
   name: traefik
