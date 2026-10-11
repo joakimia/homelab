@@ -18,6 +18,7 @@ mkdir -p "$config_dir"
 chmod 700 "$config_dir"
 trap 'rm -f "$temp_file"' EXIT
 scp "$target:~/.kube/config" "$temp_file"
+
 if ! HOMELAB_KUBECONFIG_HOST="$host" perl -0pi -e '
   $count = s{^(\s*server:\s*https://)[^/:\s]+(:\d+)?}{$1 . $ENV{HOMELAB_KUBECONFIG_HOST} . ($2 // "")}mge;
   END { exit($count ? 0 : 1) }
@@ -25,6 +26,7 @@ if ! HOMELAB_KUBECONFIG_HOST="$host" perl -0pi -e '
   echo "Could not find an HTTPS Kubernetes API server in the VM kubeconfig" >&2
   exit 1
 fi
+
 chmod 600 "$temp_file"
 mv "$temp_file" "$config_file"
 echo "Wrote a private kubeconfig for $target to $config_file (ignored by Git)."

@@ -42,8 +42,10 @@ case "$chart" in
 esac
 
 args=(upgrade --install "$chart" "$chart_dir" --namespace "$namespace")
+
 if [[ -f "$values_file" ]]; then
   args+=(--values "$values_file")
 fi
+
 args+=("$@")
 helm "${args[@]}"

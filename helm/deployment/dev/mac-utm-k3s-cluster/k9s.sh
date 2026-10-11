@@ -10,6 +10,7 @@ if [[ ! -f "$KUBECONFIG_FILE" ]]; then
   echo "Copy it from the VM first, then rerun this script." >&2
   exit 1
 fi
+
 command -v k9s >/dev/null || { echo "Install k9s on the Mac (for example: brew install k9s)" >&2; exit 1; }
 
 exec env KUBECONFIG="$KUBECONFIG_FILE" k9s --context microk8s "$@"

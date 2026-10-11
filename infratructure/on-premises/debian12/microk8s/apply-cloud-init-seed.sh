@@ -29,6 +29,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y cloud-init
 
 mount_dir=$(mktemp -d)
 seed_dir=/var/lib/cloud/seed/nocloud
+
 cleanup() {
   mountpoint -q "$mount_dir" && umount "$mount_dir" || true
   rm -rf "$mount_dir" "$seed_iso"
@@ -37,6 +38,7 @@ trap cleanup EXIT
 
 mount -o loop,ro "$seed_iso" "$mount_dir"
 install -d -m 0755 "$seed_dir"
+
 for seed_file in user-data meta-data vendor-data; do
   if [[ -f "$mount_dir/$seed_file" ]]; then
     install -m 0644 "$mount_dir/$seed_file" "$seed_dir/$seed_file"
@@ -55,5 +57,4 @@ cloud-init init
 cloud-init modules --mode=config
 cloud-init modules --mode=final
 cloud-init status --long
-
 echo "Cloud-init run complete. Reboot the VM if the provisioning config changed its hostname or networking."

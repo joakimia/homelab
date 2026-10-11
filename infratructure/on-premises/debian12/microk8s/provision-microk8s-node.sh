@@ -57,6 +57,7 @@ install_snap() {
 install_snap microk8s --classic
 install_snap helm --classic
 install_snap kubectl --classic
+
 if snap list k9s >/dev/null 2>&1; then
   snap remove k9s
 fi
@@ -66,16 +67,19 @@ case "$(dpkg --print-architecture)" in
   arm64) k9s_asset=k9s_Linux_arm64.tar.gz ;;
   *) echo "Unsupported architecture for k9s: $(dpkg --print-architecture)" >&2; exit 1 ;;
 esac
+
 k9s_tmp=$(mktemp -d)
 trap 'rm -rf "$k9s_tmp"' EXIT
 k9s_release_url=https://github.com/derailed/k9s/releases/latest/download
 curl -fsSL --retry 3 "$k9s_release_url/checksums.sha256" -o "$k9s_tmp/checksums.sha256"
 curl -fsSL --retry 3 "$k9s_release_url/$k9s_asset" -o "$k9s_tmp/$k9s_asset"
 k9s_checksum=$(awk -v asset="$k9s_asset" '$2 == asset || $2 == "*" asset {print $1; exit}' "$k9s_tmp/checksums.sha256")
+
 if [[ ! "$k9s_checksum" =~ ^[[:xdigit:]]{64}$ ]]; then
   echo "Could not find a SHA-256 checksum for $k9s_asset." >&2
   exit 1
 fi
+
 printf '%s  %s\n' "$k9s_checksum" "$k9s_tmp/$k9s_asset" | sha256sum --check --status
 tar -xzf "$k9s_tmp/$k9s_asset" -C "$k9s_tmp" k9s
 install -m 0755 "$k9s_tmp/k9s" /usr/local/bin/k9s
