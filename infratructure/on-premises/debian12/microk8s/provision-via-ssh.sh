@@ -14,8 +14,8 @@ role=$1
 target=$2
 
 case "$role" in
-  control-plane-node) default_hostname=cp0 ;;
-  worker-node) default_hostname=wk0 ;;
+  control-plane-node) default_hostname=homelab-cp0 ;;
+  worker-node) default_hostname=homelab-wk0 ;;
   *) usage; echo "Unknown node role: $role" >&2; exit 2 ;;
 esac
 

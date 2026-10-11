@@ -12,7 +12,7 @@ sudo apt install -y cloud-init
 sudo reboot
 ```
 
-Create the control-plane ISO from `infratructure/on-premises/debian12/microk8s/control-plane-node/generate-cloud-init-iso.sh`, attach it in UTM, and boot. Cloud-init installs MicroK8s, Helm, kubectl, k9s, and enables the `microk8s-hostpath` storage class. After provisioning, log out and back in so the `microk8s` group membership applies. Check `cloud-init status --long`, `microk8s status --wait-ready`, `kubectl get nodes`, `helm version`, and `kubectl get storageclass`.
+Create the control-plane ISO from `infratructure/on-premises/debian12/microk8s/control-plane-node/generate-cloud-init-iso.sh`, attach it in UTM, and boot. Cloud-init installs MicroK8s, Helm, kubectl, k9s, and enables the `homelab-pvc-storage` storage class. After provisioning, log out and back in so the `microk8s` group membership applies. Check `cloud-init status --long`, `microk8s status --wait-ready`, `kubectl get nodes`, `helm version`, and `kubectl get storageclass`.
 
 For an existing Debian VM, the repository also has `infratructure/on-premises/debian12/microk8s/provision-via-ssh.sh`; it installs the same tools over SSH and prompts for credentials as needed.
 
@@ -41,7 +41,7 @@ VM_IP=192.168.64.6
 
 The script upgrades/installs releases in dependency order, creates the credential Secrets only if missing, waits for workloads, and prints Ingresses. It is safe to rerun after chart changes. The database credentials stay in Kubernetes Secrets and outside Helm values. The script generates credentials on first install; it prints the initial pgAdmin login once.
 
-The selected chart values set `replicaCount: 1` for Traefik, homepage, pgAdmin, PgBouncer, and PostgreSQL. Traefik is a Deployment; each replica needs a separate node because it binds host ports 80/443. PostgreSQL is constrained to one replica until replication is configured.
+The selected chart values set `replicaCount: 1` for Traefik, homepage, pgAdmin, PgBouncer, and PostgreSQL.
 
 Retrieve the database password when needed with:
 
@@ -61,7 +61,7 @@ PostgreSQL defaults to the `homelab-pvc-storage` class. The platform release cre
 
 ## Reach it from the Mac
 
-UTM Shared Network uses DHCP. This VM received `192.168.64.6` after its latest restart; `192.168.64.3` was an old address. Check the guest's current address with `ip -4 -o addr show dev enp0s1`, set it as `VM_IP` on the Mac, and refresh the private kubeconfig with `./k9s-connect.sh "debian@$VM_IP"` whenever it changes. The current subnet is `192.168.64.0/24`, with gateway and DNS at `192.168.64.1`. A candidate static guest address is `192.168.64.10`, but use it only after setting UTM's DHCP range to `192.168.64.100`–`192.168.64.254` and confirming no other VM uses `.10`. UTM exposes the guest subnet, host address, and DHCP bounds in its [network device settings](https://docs.getutm.app/settings-qemu/devices/network/network/).
+UTM Shared Network uses DHCP. Check the guest's current address with `ip -4 -o addr show dev enp0s1`, set it as `VM_IP` on the Mac, and refresh the private kubeconfig with `./k9s-connect.sh "debian@$VM_IP"` whenever it changes. The current subnet is `192.168.64.0/24`, with gateway and DNS at `192.168.64.1`. A candidate static guest address is `192.168.64.10`, but use it only after setting UTM's DHCP range to `192.168.64.100`–`192.168.64.254` and confirming no other VM uses `.10`. UTM exposes the guest subnet, host address, and DHCP bounds in its [network device settings](https://docs.getutm.app/settings-qemu/devices/network/network/).
 
 Traefik listens on ports 80 and 443 on the VM node. For a temporary HTTP test without changing Mac DNS:
 
