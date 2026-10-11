@@ -1,16 +1,18 @@
-{{- $namespace := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
 {{- $_ := required "replicaCount is required" .Values.replicaCount -}}
-{{- $image := required "image settings are required" .Values.image -}}
-{{- $_ := required "image.repository is required" $image.repository -}}
-{{- $_ := required "image.tag is required" $image.tag -}}
-{{- $database := required "database settings are required" .Values.database -}}
-{{- $_ := required "database.host is required" $database.host -}}
-{{- $_ := required "database.port is required" $database.port -}}
-{{- $_ := required "database.existingSecret is required" $database.existingSecret -}}
-{{- $_ := required "database.usernameSecretKey is required" $database.usernameSecretKey -}}
-{{- $_ := required "database.passwordSecretKey is required" $database.passwordSecretKey -}}
-{{- $_ := required "database.databaseSecretKey is required" $database.databaseSecretKey -}}
-{{- $_ := required "service.port is required" .Values.service.port -}}
+{{- $_ := required "image settings are required" .Values.image -}}
+{{- $_ := required "image.repository is required" .Values.image.repository -}}
+{{- $_ := required "image.tag is required" .Values.image.tag -}}
+{{- $_ := required "database settings are required" .Values.database -}}
+{{- $_ := required "database.host is required" .Values.database.host -}}
+{{- $_ := required "database.port is required" .Values.database.port -}}
+{{- $_ := required "database.existingSecret is required" .Values.database.existingSecret -}}
+{{- $_ := required "database.usernameSecretKey is required" .Values.database.usernameSecretKey -}}
+{{- $_ := required "database.passwordSecretKey is required" .Values.database.passwordSecretKey -}}
+{{- $_ := required "database.databaseSecretKey is required" .Values.database.databaseSecretKey -}}
+{{- $_ := required "pool settings are required" .Values.pool -}}
+{{- $_ := required "pool.mode is required" .Values.pool.mode -}}
+{{- $_ := required "pool.defaultPoolSize is required" .Values.pool.defaultPoolSize -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -73,20 +75,3 @@ spec:
             periodSeconds: 20
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: pgbouncer
-  namespace: {{ .Values.namespace }}
-  labels:
-    app.kubernetes.io/name: pgbouncer
-spec:
-  type: ClusterIP
-  selector:
-    app.kubernetes.io/name: pgbouncer
-  ports:
-    - name: pgbouncer
-      port: {{ .Values.service.port }}
-      targetPort: pgbouncer
-      protocol: TCP

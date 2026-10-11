@@ -1,0 +1,21 @@
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "host is required" .Values.host -}}
+{{- $_ := required "service.port is required" .Values.service.port -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pgadmin
+  namespace: {{ .Values.namespace }}
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: {{ .Values.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pgadmin
+                port:
+                  number: {{ .Values.service.port }}

@@ -1,0 +1,13 @@
+{
+  "defaults": {
+    "helmArgs": ["--wait", "--timeout", "10m", "--rollback-on-failure"]
+  },
+  "releases": [
+    { "chart": "platform" },
+    { "chart": "traefik" },
+    { "chart": "postgres" },
+    { "chart": "pgbouncer" },
+    { "chart": "pgadmin" },
+    { "chart": "homepage" }
+  ]
+}

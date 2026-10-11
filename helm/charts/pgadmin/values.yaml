@@ -12,7 +12,8 @@ emailSecretKey: PGADMIN_DEFAULT_EMAIL
 passwordSecretKey: PGADMIN_DEFAULT_PASSWORD
 
 service:
-  port: 80
+  port: 5050
+  containerPort: 5050
 
 replicaCount: 1
 

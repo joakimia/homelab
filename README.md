@@ -6,18 +6,19 @@ The current development environment is a Debian 12 virtual machine in UTM runnin
 
 ## Current focus
 
-1. Provision the Debian VM from a NoCloud cloud-init seed.
-2. Verify MicroK8s, Helm, kubectl, and k9s on the VM.
-3. Deploy the development Helm profile in `helm/deployment/dev/mac-utm-k3s-cluster` and check access through Traefik.
+Provision a Debian 12 VM in UTM with cloud-init, then deploy the development Helm profile and reach it through Traefik:
 
-The repository is under active development. The UTM profile is the first working target; other charts and deployment profiles may still be scaffolds.
+```sh
+infratructure/on-premises/debian12/install.sh microk8s control-plane-node debian@<vm-ip>
+helm/deployment/dev/mac-utm-microk8s-cluster/install.sh debian@<vm-ip>
+```
+
+The UTM profile is the first working target. RKE2 seeds, the jumpbox, and many charts are still work in progress or scaffolds.
 
 ## Where things live
 
-- `infratructure/on-premises/debian12/microk8s/` — cloud-init seed generation and Debian provisioning helpers.
-- `helm/charts/` — individual Helm charts.
-- `helm/deployment/` — environment-specific groups of charts and install scripts.
-- `docs/` — architecture notes, user guides, and operational runbooks.
-- `tests/` — validation work as it is added.
-
-Start with the [MicroK8s provisioning guide](infratructure/on-premises/debian12/microk8s/README.md), then see the [UTM development deployment](helm/deployment/dev/mac-utm-k3s-cluster/README.md).
+- `infratructure/on-premises/debian12/`: the shared `install.sh` and cloud-init seeds for MicroK8s, RKE2, and the jumpbox. [README](infratructure/on-premises/debian12/README.md)
+- `helm/charts/`: individual Helm charts. [README](helm/charts/README.md)
+- `helm/deployment/`: cluster profiles that choose and deploy charts. [README](helm/README.md)
+- `docs/`: architecture notes, user guides, and runbooks.
+- `tests/`: `check.sh` with the static checks that CI also runs. [README](tests/README.md)

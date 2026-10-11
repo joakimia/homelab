@@ -1,11 +1,3 @@
-Scripts and procedures for setting up a complete k8s cluster.
+# Infrastructure
 
-After completing this guide, you can start to deploy via `helm upgrade`.
-
-Supports cloud-init setup and installation on
-
-## Minikube
-- Default Debian VM image
-
-## RKE2
-- Default Debian VM image   
+Provisioning that runs before Helm: turning a fresh machine or VM into a Kubernetes node. Start with [on-premises/debian12/README.md](on-premises/debian12/README.md). Once a node is ready, deploy the charts from `helm/deployment/`.

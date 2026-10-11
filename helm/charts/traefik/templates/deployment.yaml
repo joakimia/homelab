@@ -1,66 +1,15 @@
-{{- $namespace := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
 {{- $_ := required "replicaCount is required" .Values.replicaCount -}}
-{{- $image := required "image settings are required" .Values.image -}}
-{{- $_ := required "image.repository is required" $image.repository -}}
-{{- $_ := required "image.tag is required" $image.tag -}}
-{{- $ports := required "ports settings are required" .Values.ports -}}
-{{- $_ := required "ports.web.hostPort is required" $ports.web.hostPort -}}
-{{- $_ := required "ports.websecure.hostPort is required" $ports.websecure.hostPort -}}
+{{- $_ := required "image settings are required" .Values.image -}}
+{{- $_ := required "image.repository is required" .Values.image.repository -}}
+{{- $_ := required "image.tag is required" .Values.image.tag -}}
+{{- $_ := required "ports settings are required" .Values.ports -}}
+{{- $_ := required "ports.web.containerPort is required" .Values.ports.web.containerPort -}}
+{{- $_ := required "ports.web.hostPort is required" .Values.ports.web.hostPort -}}
+{{- $_ := required "ports.websecure.containerPort is required" .Values.ports.websecure.containerPort -}}
+{{- $_ := required "ports.websecure.hostPort is required" .Values.ports.websecure.hostPort -}}
+{{- $_ := required "ports.api.containerPort is required" .Values.ports.api.containerPort -}}
 {{- $_ := required "ingressClass.name is required" .Values.ingressClass.name -}}
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: {{ include "traefik.fullname" . }}
-  namespace: {{ .Values.namespace }}
-  labels:
-    {{- include "traefik.labels" . | nindent 4 }}
-automountServiceAccountToken: true
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: {{ include "traefik.fullname" . }}
-  labels:
-    {{- include "traefik.labels" . | nindent 4 }}
-rules:
-  - apiGroups: [""]
-    resources: ["services", "endpoints", "secrets", "nodes"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["networking.k8s.io"]
-    resources: ["ingresses", "ingressclasses"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["networking.k8s.io"]
-    resources: ["ingresses/status"]
-    verbs: ["update"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: {{ include "traefik.fullname" . }}
-  labels:
-    {{- include "traefik.labels" . | nindent 4 }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: {{ include "traefik.fullname" . }}
-subjects:
-  - kind: ServiceAccount
-    name: {{ include "traefik.fullname" . }}
-    namespace: {{ .Values.namespace }}
----
-apiVersion: networking.k8s.io/v1
-kind: IngressClass
-metadata:
-  name: {{ .Values.ingressClass.name }}
-  labels:
-    {{- include "traefik.labels" . | nindent 4 }}
-  {{- if .Values.ingressClass.isDefaultClass }}
-  annotations:
-    ingressclass.kubernetes.io/is-default-class: "true"
-  {{- end }}
-spec:
-  controller: traefik.io/ingress-controller
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -131,7 +80,6 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: [ALL]
-              add: [NET_BIND_SERVICE]
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 65532
@@ -153,24 +101,3 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "traefik.fullname" . }}
-  namespace: {{ .Values.namespace }}
-  labels:
-    {{- include "traefik.labels" . | nindent 4 }}
-spec:
-  type: ClusterIP
-  selector:
-    {{- include "traefik.selectorLabels" . | nindent 4 }}
-  ports:
-    - name: web
-      port: 80
-      targetPort: web
-      protocol: TCP
-    - name: websecure
-      port: 443
-      targetPort: websecure
-      protocol: TCP
