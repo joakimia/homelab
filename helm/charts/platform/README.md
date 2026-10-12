@@ -7,7 +7,7 @@ Creates the homelab namespaces, their Pod Security labels, the baseline NetworkP
 Normally installed first by the cluster profile's `deploy.sh` (see `deploy-set.json`). To install it alone from this directory:
 
 ```sh
-./scripts/install.sh --values ../../deployment/dev/mac-utm-microk8s-cluster/platform/values.yaml --wait
+./scripts/install.sh --values ../../deployment/dev/local-microk8s-cluster-dev/platform/values.yaml --wait
 ```
 
 The release lives in the `default` namespace. No Secrets are needed.

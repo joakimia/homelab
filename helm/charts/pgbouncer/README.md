@@ -7,7 +7,7 @@ Runs a PgBouncer connection pool in `hlab-database` in front of the `postgres` S
 Normally installed by the cluster profile's `deploy.sh` after `postgres`. To install it alone:
 
 ```sh
-./scripts/install.sh --values ../../deployment/dev/mac-utm-microk8s-cluster/pgbouncer/values.yaml --wait
+./scripts/install.sh --values ../../deployment/dev/local-microk8s-cluster-dev/pgbouncer/values.yaml --wait
 ```
 
 ## Secrets

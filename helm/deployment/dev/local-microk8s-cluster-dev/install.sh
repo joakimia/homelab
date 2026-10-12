@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Installs this profile on the VM over SSH: bundles helm/charts and this profile, copies the
-# bundle to the VM, and runs ./deploy.sh --local there with the VM's own kubeconfig.
+# bundle to ~/homelab-deploy/<cluster> on the VM, and runs ./deploy.sh --local there with the
+# VM's own kubeconfig. The profile folder name is the cluster name.
 #
 #   ./install.sh debian@<vm-ip>
 #
@@ -17,12 +18,13 @@ target="$1"
 profile_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "$profile_dir/../../../.." && pwd)"
 profile_path="${profile_dir#"$repo_root"/}"
-remote_dir="homelab-dev-deploy"
+cluster_name="$(basename "$profile_dir")"
+remote_dir="homelab-deploy/$cluster_name"
 
 command -v ssh >/dev/null || { echo "ssh is required" >&2; exit 1; }
 command -v scp >/dev/null || { echo "scp is required" >&2; exit 1; }
 
-temp_archive="$(mktemp "${TMPDIR:-/tmp}/homelab-dev-charts.XXXXXX")"
+temp_archive="$(mktemp "${TMPDIR:-/tmp}/homelab-$cluster_name.XXXXXX")"
 # Short path: SSH control sockets are limited to about 104 bytes, and macOS $TMPDIR is long.
 control_dir="$(mktemp -d /tmp/homelab-ssh.XXXXXX)"
 # Share one SSH connection so a password (if no key is set up) is asked only once.

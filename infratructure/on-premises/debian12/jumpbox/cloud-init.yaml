@@ -20,12 +20,15 @@ packages:
   - xorriso          # install.sh --iso on the jumpbox
   - skopeo           # copy images into the local registry without a container runtime
   - docker-registry  # CNCF distribution registry from Debian 12, systemd service on :5000
+  - unattended-upgrades
 
 runcmd:
+  # Step 1: Install kubectl, Helm, and k9s
   # Pinned versions: exact releases checked against the SHA-256 recorded here. kubectl matches
   # the clusters' 1.36 minor. To upgrade, change the version and both checksums.
   - |
     set -e
+    # Set versions and architecture-specific checksums
     kubectl_version=v1.36.5
     helm_version=v4.3.0
     k9s_version=v0.51.0
@@ -41,6 +44,8 @@ runcmd:
         k9s_sha256=3ee05c82e5f9198928a4e86133608ba6a2c10a2244d6a7789e820f78319d640c ;;
       *) echo "Unsupported architecture: $arch" >&2; exit 1 ;;
     esac
+
+    # Download and verify the binaries
     tmp=$(mktemp -d)
     curl -fsSL --retry 3 -o "$tmp/kubectl" "https://dl.k8s.io/release/$kubectl_version/bin/linux/$arch/kubectl"
     curl -fsSL --retry 3 -o "$tmp/helm.tar.gz" "https://get.helm.sh/helm-$helm_version-linux-$arch.tar.gz"
@@ -48,12 +53,22 @@ runcmd:
     printf '%s  %s\n' "$kubectl_sha256" "$tmp/kubectl" "$helm_sha256" "$tmp/helm.tar.gz" "$k9s_sha256" "$tmp/k9s.tar.gz" | sha256sum --check
     tar -xzf "$tmp/helm.tar.gz" -C "$tmp" "linux-$arch/helm"
     tar -xzf "$tmp/k9s.tar.gz" -C "$tmp" k9s
+
+    # Install the binaries
     install -m 0755 "$tmp/kubectl" /usr/local/bin/kubectl
     install -m 0755 "$tmp/linux-$arch/helm" /usr/local/bin/helm
     install -m 0755 "$tmp/k9s" /usr/local/bin/k9s
+
+    # Clean up temporary files
     rm -rf "$tmp"
+
+
+  # Step 2: Create the jumpbox's SSH key
   # The jumpbox's own key. Nodes provisioned from the jumpbox with install.sh authorize it.
   - [runuser, -u, debian, --, sh, -c, 'test -f ~/.ssh/id_ed25519 || ssh-keygen -q -t ed25519 -N "" -f ~/.ssh/id_ed25519 -C "debian@$(hostname)"']
+
+
+  # Step 3: Configure and start the local registry
   # Local registry, HTTP only on port 5000, images in /var/lib/docker-registry. Written after the
   # package install so it replaces the package's default config.
   - |
@@ -81,3 +96,35 @@ runcmd:
     systemctl enable docker-registry
     systemctl restart docker-registry
     timeout 60 sh -c 'until curl -fsS http://localhost:5000/v2/ >/dev/null; do sleep 2; done'
+
+
+  # Step 4: Basic hardening (work in progress: SSH and security updates only)
+  - |
+    set -e
+    # SSH: no root login, few attempts per connection, no X11 forwarding. Files in
+    # sshd_config.d are read in name order and the first value wins, so 10- beats cloud-init's 50-.
+    cat > /etc/ssh/sshd_config.d/10-homelab-hardening.conf <<'CONFIG'
+    PermitRootLogin no
+    MaxAuthTries 3
+    X11Forwarding no
+    CONFIG
+    # Key-only logins, but only when install.sh authorized a key; otherwise SSH would lock out.
+    if [ -s /home/debian/.ssh/authorized_keys ]; then
+      printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\n' >> /etc/ssh/sshd_config.d/10-homelab-hardening.conf
+    else
+      echo "No SSH key authorized for debian; password logins stay on." >&2
+    fi
+    sshd -t
+    systemctl reload ssh
+    # Daily Debian security updates only, and never an automatic reboot.
+    cat > /etc/apt/apt.conf.d/52homelab-unattended-upgrades <<'CONFIG'
+    #clear Unattended-Upgrade::Origins-Pattern;
+    Unattended-Upgrade::Origins-Pattern { "origin=Debian,codename=${distro_codename}-security,label=Debian-Security"; };
+    Unattended-Upgrade::Automatic-Reboot "false";
+    CONFIG
+    printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' > /etc/apt/apt.conf.d/20auto-upgrades
+
+
+  # Step 5: Print the effective hardening settings to /var/log/cloud-init-output.log
+  - [sh, -c, 'sshd -T | grep -E "^(permitrootlogin|maxauthtries|x11forwarding|passwordauthentication|kbdinteractiveauthentication) "']
+  - [sh, -c, 'apt-config dump | grep -E "^(APT::Periodic::Unattended-Upgrade|Unattended-Upgrade::Automatic-Reboot|Unattended-Upgrade::Origins-Pattern::) "']

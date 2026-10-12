@@ -9,7 +9,7 @@ Provision the VM first ([guide](../../../../infratructure/on-premises/debian12/R
 ```sh
 VM_IP=192.168.64.9      # in the VM console: ip -4 -o addr show dev enp0s1
 infratructure/on-premises/debian12/install.sh microk8s control-plane-node "debian@$VM_IP"
-helm/deployment/dev/mac-utm-microk8s-cluster/install.sh "debian@$VM_IP"
+helm/deployment/dev/local-microk8s-cluster-dev/install.sh "debian@$VM_IP"
 curl --resolve "homepage.homelab.com:8080:$VM_IP" http://homepage.homelab.com:8080/
 ```
 
@@ -17,9 +17,9 @@ curl --resolve "homepage.homelab.com:8080:$VM_IP" http://homepage.homelab.com:80
 
 | Command (from the Mac) | What it does |
 |---|---|
-| `install.sh debian@<ip>` | Copies `helm/charts` and this profile to `~/homelab-dev-deploy` on the VM over SSH, then runs `deploy.sh --local` there. Needs only `ssh`/`scp` on the Mac. |
-| `deploy.sh debian@<ip>` | Copies the VM's kubeconfig to `./.local/homelab-kubeconfig` and runs Helm on the Mac against the VM. Needs `helm`, `kubectl`, and `jq` on the Mac. Your default kubeconfig is not touched. |
-| `deploy.sh --kubeconfig debian@<ip>` | Only refreshes `./.local/homelab-kubeconfig`, for example for k9s. |
+| `install.sh debian@<ip>` | Copies `helm/charts` and this profile to `~/homelab-deploy/local-microk8s-cluster-dev` on the VM over SSH, then runs `deploy.sh --local` there. Needs only `ssh`/`scp` on the Mac. |
+| `deploy.sh debian@<ip>` | Copies the VM's kubeconfig to `./.local/local-microk8s-cluster-dev.kubeconfig`, with the context renamed to `local-microk8s-cluster-dev`, and runs Helm on the Mac against the VM. Needs `helm`, `kubectl`, and `jq` on the Mac. Your default kubeconfig is not touched. |
+| `deploy.sh --kubeconfig debian@<ip>` | Only refreshes `./.local/local-microk8s-cluster-dev.kubeconfig`, for example for k9s. |
 | `deploy.sh --local` | Deploys to the current kubectl context (used on the VM). |
 
 Each chart's `scripts/install.sh` creates its Secrets only if they are missing. Helm waits up to 10 minutes per chart and rolls back on failure. Reruns are safe. The pgAdmin login is printed once, on first install.
@@ -27,8 +27,8 @@ Each chart's `scripts/install.sh` creates its Secrets only if they are missing. 
 k9s from the repository root:
 
 ```sh
-helm/deployment/dev/mac-utm-microk8s-cluster/deploy.sh --kubeconfig "debian@$VM_IP"
-KUBECONFIG=.local/homelab-kubeconfig k9s --context microk8s
+helm/deployment/dev/local-microk8s-cluster-dev/deploy.sh --kubeconfig "debian@$VM_IP"
+KUBECONFIG=.local/local-microk8s-cluster-dev.kubeconfig k9s
 ```
 
 ## Secrets and database access

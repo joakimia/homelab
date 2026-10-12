@@ -10,6 +10,7 @@
 - Installs RKE2 as a server and starts `rke2-server`, then waits until the API answers.
 - Puts `kubectl` (from RKE2) on PATH, and copies the admin kubeconfig to `/home/debian/.kube/config`.
 - Installs Helm and k9s.
+- Applies the [basic hardening](../README.md#basic-hardening-work-in-progress).
 
 The worker seed installs the RKE2 agent, Helm, and k9s, but does not join or start yet. Joining needs the server URL (`https://<control-plane-ip>:9345`) and the token from `/var/lib/rancher/rke2/server/node-token` in `/etc/rancher/rke2/config.yaml`. Keep the token out of Git.
 

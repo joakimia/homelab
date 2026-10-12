@@ -7,7 +7,7 @@ Runs one PostgreSQL 17 instance as a StatefulSet with a persistent volume in `hl
 Normally installed by the cluster profile's `deploy.sh` after `platform` and before `pgbouncer`. To install it alone:
 
 ```sh
-./scripts/install.sh --values ../../deployment/dev/mac-utm-microk8s-cluster/postgres/values.yaml --wait
+./scripts/install.sh --values ../../deployment/dev/local-microk8s-cluster-dev/postgres/values.yaml --wait
 ```
 
 ## Secrets

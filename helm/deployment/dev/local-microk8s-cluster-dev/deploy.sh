@@ -2,20 +2,22 @@
 # Deploys the charts in deploy-set.json to the UTM MicroK8s cluster. Each listed chart's
 # scripts/install.sh runs in order with this profile's values overlay and extra Helm flags.
 # Each environment/cluster profile keeps its own deploy.sh so the flow can differ per cluster.
+# The profile folder name is the cluster name, used for the kubeconfig file and its context.
 #
 #   ./deploy.sh debian@<vm-ip>               Default, from the Mac: copy the VM's kubeconfig over
-#                                            SSH to ./.local/homelab-kubeconfig and run Helm here.
-#   ./deploy.sh --kubeconfig debian@<vm-ip>  Only refresh .local/homelab-kubeconfig (for k9s).
+#                                            SSH to ./.local/<cluster>.kubeconfig and run Helm here.
+#   ./deploy.sh --kubeconfig debian@<vm-ip>  Only refresh .local/<cluster>.kubeconfig (for k9s).
 #   ./deploy.sh --local                      Use the current kubectl context; install.sh runs
 #                                            this on the VM.
 set -euo pipefail
 export LC_ALL=C  # English messages from bash and tools, whatever the local language
 
 profile_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cluster_name="$(basename "$profile_dir")"
 deploy_set="$profile_dir/deploy-set.json"
 charts_dir="$(cd "$profile_dir/../../../charts" && pwd)"
 # Written under the directory you run deploy.sh from; .local/ is ignored by Git everywhere.
-config_file="$PWD/.local/homelab-kubeconfig"
+config_file="$PWD/.local/$cluster_name.kubeconfig"
 
 usage() {
   echo "Usage: $0 debian@<vm-ip> | --kubeconfig debian@<vm-ip> | --local" >&2
@@ -26,7 +28,8 @@ check_target() {
   [[ "$1" =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$ ]] || usage
 }
 
-# Copies ~/.kube/config from the VM and points it at the VM address instead of 127.0.0.1.
+# Copies ~/.kube/config from the VM, points it at the VM address instead of 127.0.0.1, and
+# renames its context (and a cluster or user with the same name) to the cluster name.
 # The file is separate from the default kubeconfig and ignored by Git (it holds credentials).
 fetch_kubeconfig() {
   local target=$1 host=${1##*@} temp_file
@@ -44,11 +47,19 @@ fetch_kubeconfig() {
     echo "Could not find an HTTPS Kubernetes API server in the VM kubeconfig" >&2
     exit 1
   fi
+  if ! HOMELAB_CLUSTER_NAME="$cluster_name" perl -0pi -e '
+    ($old) = /^current-context:[ \t]*(\S+)[ \t]*$/m;
+    $count = defined $old ? s{^(\s*(?:-\s+)?(?:name|cluster|user|current-context):[ \t]*)\Q$old\E[ \t]*$}{$1$ENV{HOMELAB_CLUSTER_NAME}}mg : 0;
+    END { exit($count ? 0 : 1) }
+  ' "$temp_file"; then
+    echo "Could not find the current context in the VM kubeconfig" >&2
+    exit 1
+  fi
 
   chmod 600 "$temp_file"
   mv "$temp_file" "$config_file"
   trap - EXIT
-  echo "Wrote the kubeconfig for $target to $config_file (ignored by Git)."
+  echo "Wrote the kubeconfig for $target to $config_file with context $cluster_name (ignored by Git)."
 }
 
 deploy_releases() {
@@ -64,7 +75,7 @@ deploy_releases() {
   local helm_major
   helm_major="$(helm version --template '{{.Version}}' | sed -E 's/^v([0-9]+).*/\1/')"
 
-  echo "Deploying to context $(kubectl config current-context) with Helm $(helm version --short)"
+  echo "Deploying profile $cluster_name to context $(kubectl config current-context) with Helm $(helm version --short)"
   kubectl get nodes >/dev/null
 
   count="$(jq '.releases | length' "$deploy_set")"

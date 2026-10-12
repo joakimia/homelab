@@ -9,6 +9,7 @@ The jumpbox is the entry point to the cluster network. You reach it first, and f
 - Installs `curl`, `jq`, `git`, `openssh-client`, `xorriso` (for `install.sh --iso`), and `skopeo` (to copy images into the registry without Docker).
 - Installs kubectl `v1.36.5`, Helm `v4.3.0`, and k9s `v0.51.0`, each checked against SHA-256 per architecture.
 - Creates its own SSH key, `~/.ssh/id_ed25519`. Nodes provisioned from the jumpbox authorize this key automatically.
+- Applies the [basic hardening](../README.md#basic-hardening-work-in-progress).
 - Runs a local registry: Debian's `docker-registry` package (CNCF distribution 2.8), HTTP only on port **5000**, with images in `/var/lib/docker-registry`.
 
 ## Provision it
@@ -27,7 +28,7 @@ After cloud-init has run, `install.sh` copies the **bundle** to `~/homelab-bundl
 ssh debian@<jumpbox-ip>
 cd ~/homelab-bundle/infratructure/on-premises/debian12
 ./install.sh rke2 control-plane-node debian@<node-ip>                       # provision a node
-~/homelab-bundle/helm/deployment/dev/mac-utm-microk8s-cluster/deploy.sh debian@<node-ip>   # deploy charts
+~/homelab-bundle/helm/deployment/dev/local-microk8s-cluster-dev/deploy.sh debian@<node-ip>   # deploy charts
 ```
 
 The first `install.sh` run against a fresh node asks for the node's SSH and sudo passwords. From then on, the node accepts the jumpbox key. To reach such a node from the Mac, go through the jumpbox: `ssh -J debian@<jumpbox-ip> debian@<node-ip>`.

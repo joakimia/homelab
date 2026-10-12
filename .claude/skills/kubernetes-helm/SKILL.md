@@ -5,7 +5,7 @@ description: Create, maintain, deploy, inspect, or troubleshoot the homelab Helm
 
 # Homelab Helm charts and the local MicroK8s workflow
 
-Use this skill when you add or change a chart in `helm/charts/`, change a deployment profile in `helm/deployment/`, or work with the UTM development stack in `helm/deployment/dev/mac-utm-microk8s-cluster/`.
+Use this skill when you add or change a chart in `helm/charts/`, change a deployment profile in `helm/deployment/`, or work with the UTM development stack in `helm/deployment/dev/local-microk8s-cluster-dev/`.
 
 ## Creating or maintaining a chart
 
@@ -33,9 +33,9 @@ Follow the layout the existing charts use (`pgadmin`, `postgres`, and `traefik` 
 
 ## Deployment profiles
 
-- `helm/deployment/<env>/<cluster>/` contains only `deploy-set.json`, `deploy.sh`, `install.sh`, `README.md`, and one `<chart>/values.yaml` overlay per chart. Put new profile logic into `install.sh` or `deploy.sh`; do not add more helper scripts. Files the scripts generate (such as `.local/homelab-kubeconfig`) go under the directory the script is run from.
+- `helm/deployment/<env>/<cluster>/` contains only `deploy-set.json`, `deploy.sh`, `install.sh`, `README.md`, and one `<chart>/values.yaml` overlay per chart. Put new profile logic into `install.sh` or `deploy.sh`; do not add more helper scripts. Files the scripts generate (such as `.local/<cluster>.kubeconfig`) go under the directory the script is run from.
 - `install.sh <user@host>` (default: SSH) bundles `helm/charts` and the profile, copies it to the node, and runs `deploy.sh --local` there. A local mode is planned, not implemented.
-- `deploy.sh <user@host>` (default: remote) fetches the node's kubeconfig over SSH into `.local/homelab-kubeconfig` and runs Helm from the Mac. `--kubeconfig <user@host>` only refreshes that file (for k9s), and `--local` uses the current context.
+- `deploy.sh <user@host>` (default: remote) fetches the node's kubeconfig over SSH into `.local/<cluster>.kubeconfig`, renames its context to the cluster name (the profile folder name), and runs Helm from the Mac. `--kubeconfig <user@host>` only refreshes that file (for k9s), and `--local` uses the current context.
 - `deploy-set.json` has `defaults.helmArgs` and an ordered `releases` list. Each entry is `{ "chart": "...", "helmArgs": [...], "values": "..." }`; only `chart` is required.
 - `deploy.sh` reads that file and runs each `helm/charts/<chart>/scripts/install.sh`. It differs per profile and needs `jq`.
 - Other profiles are separate targets. Never deploy them automatically.
@@ -44,7 +44,7 @@ Follow the layout the existing charts use (`pgadmin`, `postgres`, and `traefik` 
 
 1. Read the profile README and `AGENTS.md`.
 2. Inspect `kubectl config current-context`, cluster nodes, and relevant Helm releases before applying changes.
-3. For commands from the Mac, use `.local/homelab-kubeconfig` (written by `deploy.sh`) explicitly. Do not rewrite or clean the user's global kubeconfig, and do not deploy this profile to Docker Desktop, AKS, or another context.
+3. For commands from the Mac, use `.local/<cluster>.kubeconfig` (written by `deploy.sh`) explicitly. Do not rewrite or clean the user's global kubeconfig, and do not deploy this profile to Docker Desktop, AKS, or another context.
 4. Use the profile installer, which follows its `deploy-set.json`, or run a single chart with `helm/charts/<chart>/scripts/install.sh --values <profile>/<chart>/values.yaml`. Keep generated secrets in Kubernetes Secrets; never commit them or place them in Helm values.
 
 ## Troubleshooting layers

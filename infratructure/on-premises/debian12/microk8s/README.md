@@ -11,7 +11,7 @@ NoCloud seeds that turn a fresh Debian 12 VM into a MicroK8s node for the local 
 
 ## What the seed does
 
-Updates Debian, installs the tools below, adds `debian` to the `microk8s` group, and writes `~/.kube/config`. On the control plane it also enables hostpath storage.
+Updates Debian, installs the tools below, adds `debian` to the `microk8s` group, and writes `~/.kube/config`. On the control plane it also enables hostpath storage. The last steps apply the [basic hardening](../README.md#basic-hardening-work-in-progress).
 
 | Tool | Pin |
 |---|---|
@@ -34,4 +34,4 @@ kubectl get nodes
 helm version && k9s version
 ```
 
-Then deploy the charts with the [UTM Helm profile](../../../../helm/deployment/dev/mac-utm-microk8s-cluster/README.md).
+Then deploy the charts with the [UTM Helm profile](../../../../helm/deployment/dev/local-microk8s-cluster-dev/README.md).

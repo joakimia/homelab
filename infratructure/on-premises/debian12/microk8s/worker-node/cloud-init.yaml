@@ -14,18 +14,27 @@ packages:
   - curl
   - jq
   - snapd
+  - unattended-upgrades
 
 runcmd:
+  # Step 1: Enable snapd and wait until it can install snaps
   - [systemctl, enable, --now, snapd.socket]
   - [sh, -c, 'ln -sfn /var/lib/snapd/snap /snap']
   - [snap, wait, system, seed.loaded]
+
+
+  # Step 2: Install MicroK8s and kubectl
   # Pinned versions. MicroK8s and kubectl follow a minor-version snap track (patch updates
   # arrive through snap refresh); Helm and k9s are exact releases checked against the SHA-256
   # recorded here. To upgrade, change the version and both checksums from the release page.
   - [snap, install, microk8s, --classic, --channel=1.36/stable]
   - [snap, install, kubectl, --classic, --channel=1.36/stable]
+
+
+  # Step 3: Install Helm and k9s
   - |
     set -e
+    # Set versions and architecture-specific checksums
     helm_version=v4.3.0
     k9s_version=v0.51.0
     arch=$(dpkg --print-architecture)
@@ -38,22 +47,66 @@ runcmd:
         k9s_sha256=3ee05c82e5f9198928a4e86133608ba6a2c10a2244d6a7789e820f78319d640c ;;
       *) echo "Unsupported architecture: $arch" >&2; exit 1 ;;
     esac
+
+    # Download and verify the binaries
     tmp=$(mktemp -d)
     curl -fsSL --retry 3 -o "$tmp/helm.tar.gz" "https://get.helm.sh/helm-$helm_version-linux-$arch.tar.gz"
     curl -fsSL --retry 3 -o "$tmp/k9s.tar.gz" "https://github.com/derailed/k9s/releases/download/$k9s_version/k9s_Linux_$arch.tar.gz"
     printf '%s  %s\n' "$helm_sha256" "$tmp/helm.tar.gz" "$k9s_sha256" "$tmp/k9s.tar.gz" | sha256sum --check
     tar -xzf "$tmp/helm.tar.gz" -C "$tmp" "linux-$arch/helm"
     tar -xzf "$tmp/k9s.tar.gz" -C "$tmp" k9s
+
+    # Install the binaries
     install -m 0755 "$tmp/linux-$arch/helm" /usr/local/bin/helm
     install -m 0755 "$tmp/k9s" /usr/local/bin/k9s
+
+    # Clean up temporary files and the old Helm snap
     rm -rf "$tmp"
     # An older seed installed Helm as a snap; remove it so only the pinned binary is on PATH.
     if snap list helm >/dev/null 2>&1; then snap remove helm; fi
+
+
+  # Step 4: Wait for MicroK8s and give the debian user access
   - [usermod, -aG, microk8s, debian]
   - [/snap/bin/microk8s, status, --wait-ready]
+
+
+  # Step 5: Write the debian user's kubeconfig
   - [install, -d, -o, debian, -g, debian, -m, '0700', /home/debian/.kube]
   # Point the node's own kubeconfig at 127.0.0.1 so it keeps working when DHCP changes the IP.
   # deploy.sh on the Mac rewrites the server to the address it connects to.
   - [sh, -c, '/snap/bin/microk8s config | sed "s#server: https://.*:16443#server: https://127.0.0.1:16443#" > /home/debian/.kube/config']
   - [chown, 'debian:debian', /home/debian/.kube/config]
   - [chmod, '0600', /home/debian/.kube/config]
+
+
+  # Step 6: Basic hardening (work in progress: SSH and security updates only)
+  - |
+    set -e
+    # SSH: no root login, few attempts per connection, no X11 forwarding. Files in
+    # sshd_config.d are read in name order and the first value wins, so 10- beats cloud-init's 50-.
+    cat > /etc/ssh/sshd_config.d/10-homelab-hardening.conf <<'CONFIG'
+    PermitRootLogin no
+    MaxAuthTries 3
+    X11Forwarding no
+    CONFIG
+    # Key-only logins, but only when install.sh authorized a key; otherwise SSH would lock out.
+    if [ -s /home/debian/.ssh/authorized_keys ]; then
+      printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\n' >> /etc/ssh/sshd_config.d/10-homelab-hardening.conf
+    else
+      echo "No SSH key authorized for debian; password logins stay on." >&2
+    fi
+    sshd -t
+    systemctl reload ssh
+    # Daily Debian security updates only, and never an automatic reboot.
+    cat > /etc/apt/apt.conf.d/52homelab-unattended-upgrades <<'CONFIG'
+    #clear Unattended-Upgrade::Origins-Pattern;
+    Unattended-Upgrade::Origins-Pattern { "origin=Debian,codename=${distro_codename}-security,label=Debian-Security"; };
+    Unattended-Upgrade::Automatic-Reboot "false";
+    CONFIG
+    printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' > /etc/apt/apt.conf.d/20auto-upgrades
+
+
+  # Step 7: Print the effective hardening settings to /var/log/cloud-init-output.log
+  - [sh, -c, 'sshd -T | grep -E "^(permitrootlogin|maxauthtries|x11forwarding|passwordauthentication|kbdinteractiveauthentication) "']
+  - [sh, -c, 'apt-config dump | grep -E "^(APT::Periodic::Unattended-Upgrade|Unattended-Upgrade::Automatic-Reboot|Unattended-Upgrade::Origins-Pattern::) "']

@@ -7,7 +7,7 @@ Runs Traefik as the Ingress controller in `hlab-networking`. It watches Kubernet
 Normally installed by the cluster profile's `deploy.sh` after `platform`. To install it alone:
 
 ```sh
-./scripts/install.sh --values ../../deployment/dev/mac-utm-microk8s-cluster/traefik/values.yaml --wait
+./scripts/install.sh --values ../../deployment/dev/local-microk8s-cluster-dev/traefik/values.yaml --wait
 ```
 
 No Secrets are needed. TLS certificates and DNS are not configured; the local routes are HTTP only.

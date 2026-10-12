@@ -34,4 +34,13 @@ You type the SSH password once and the sudo password once. After that, SSH works
 
 `--iso` writes `<hostname>-seed.iso` to the directory you run it from. Attach it as a CD/DVD drive to a VM that already has cloud-init. It uses `hdiutil` on macOS or `xorriso`/`genisoimage` on Linux.
 
+## Basic hardening (work in progress)
+
+The last steps of every seed apply a small baseline and print the result to `/var/log/cloud-init-output.log`:
+
+- SSH: `PermitRootLogin no`, `MaxAuthTries 3`, `X11Forwarding no` in `/etc/ssh/sshd_config.d/10-homelab-hardening.conf`. Password logins are turned off only if `install.sh` authorized a key; without a key they stay on so SSH still works. The UTM console accepts the password either way.
+- Updates: `unattended-upgrades` installs Debian security updates daily and never reboots on its own.
+
+Not included yet: a host firewall (MicroK8s and RKE2 manage iptables for pod networking, so it needs a planned port list), fail2ban, and CIS profiles. Check on the machine with `sudo sshd -T | grep -E 'passwordauth|permitroot'` and `sudo unattended-upgrade --dry-run --debug`.
+
 What each seed installs, its pinned versions, and the checks to run afterwards are in [microk8s/](microk8s/README.md), [rke2/](rke2/README.md), and [jumpbox/](jumpbox/README.md).

@@ -6,7 +6,7 @@ This is a personal hobby and learning project. The goal is to build practical un
 
 The first goal is a clean Debian 12 VM in UTM, provisioned from the Mac with a NoCloud cloud-init seed, running MicroK8s with Helm, kubectl, and k9s, and the development Helm profile deployed and verified. RKE2 on physical hardware, with a jumpbox that provisions the nodes and hosts a local registry, is the later goal; its seeds are work in progress.
 
-The current UTM cluster runs MicroK8s and uses the profile `helm/deployment/dev/mac-utm-microk8s-cluster`. Confirm the active Kubernetes context and the actual cluster before changing anything.
+The current UTM cluster runs MicroK8s and uses the profile `helm/deployment/dev/local-microk8s-cluster-dev`. Confirm the active Kubernetes context and the actual cluster before changing anything.
 
 UTM's `192.168.64.x` network and its address/DNS notes apply only to that VM. Do not carry them into the RKE2-on-hardware setup; define addressing, DNS, and routing for the home LAN there.
 
@@ -22,7 +22,7 @@ The current stack is platform namespaces and policies, Traefik, PostgreSQL, PgBo
 - Run `tests/check.sh` after changes; CI (`.github/workflows/ci.yml`) runs the same script. It covers `bash -n`, shellcheck, cloud-init YAML and `dash -n` on `runcmd` blocks, `helm lint`/`helm template` with profile overlays, and usage exits. Keep CI workflow files minimal: they install tools and call repository scripts. New checks go into `check.sh`. Do not run tests or provision/deploy against a VM or cluster unless the user asks; report exactly what was run.
 - For cloud-init changes, follow the real flow from a clean Debian install. Do not assume packages or tools are already present.
 - Other profiles are separate targets and must not be deployed automatically.
-- Keep the Mac's default kubeconfig intact. `deploy.sh` writes a separate, ignored `.local/homelab-kubeconfig`; use it explicitly for checks and k9s.
+- Keep the Mac's default kubeconfig intact. `deploy.sh` writes a separate, ignored `.local/<cluster>.kubeconfig` whose context is the cluster name; use it explicitly for checks and k9s.
 - Treat provisioning and deployment as learning workflows: explain what a command changes and verify the result at the relevant layer.
 - **English only in the repository:** docs, comments, script output and error messages, commit messages, and skill files. Every script sets `export LC_ALL=C` right after `set -euo pipefail`, so messages from bash and tools are English whatever the local language (the Mac is set to Norwegian). The user often writes to you in Norwegian; you may answer in their language, but anything written into the repo is English.
 
@@ -30,10 +30,11 @@ The current stack is platform namespaces and policies, Traefik, PostgreSQL, PgBo
 
 - **Few entry points.** Provisioning has one script, `infratructure/on-premises/debian12/install.sh`. Each Helm profile has `install.sh` (over SSH: bundle, copy, deploy on the node) and `deploy.sh` (remote from the Mac, or `--local`). Put new logic into these instead of adding helper scripts; follow the `shell-scripts` skill for structure (usage header, `usage()`, validators, one function per step, dispatch at the bottom).
 - **Portable host scripts.** Scripts run on the Mac must also work on Linux: bash 3.2 compatible (guard empty arrays under `set -u`), detect tools instead of assuming them (for example `hdiutil` or `xorriso`, BSD or GNU tar), and no `sed -i ''`.
-- **Outputs go where the script is run.** Generated files such as seed ISOs and `.local/homelab-kubeconfig` are written under the caller's current directory unless a path is given. `*.iso` and `.local/` are ignored by Git.
+- **Outputs go where the script is run.** Generated files such as seed ISOs and `.local/<cluster>.kubeconfig` are written under the caller's current directory unless a path is given. `*.iso` and `.local/` are ignored by Git.
 - **Pinned versions.** Seeds pin MicroK8s and kubectl to a snap track, and Helm, k9s, kubectl, and the RKE2 installer to exact releases with a SHA-256 per architecture. Update the version tables in the READMEs with them.
 - **Unprivileged ports.** No port 80: Traefik uses 8080/8443, apps listen on 8080, and pgAdmin on 5050. Do not add `NET_BIND_SERVICE` for ports; add it only when the image binary carries it as a file capability (the caddy image does, see the homepage chart).
 - **SSH access.** The seed authorizes the provisioning machine's public key, so only the first `install.sh` run asks for a password. The jumpbox has its own key for the nodes it provisions.
+- **Profile folder = cluster name.** The folder name in `helm/deployment/<env>/<cluster>/` is the cluster the profile deploys to. The profile scripts read it from the folder and use it for the kubeconfig file and context and the bundle directory on the node; do not hard-code it.
 - **Charts and profiles.** Follow the `kubernetes-helm` skill: one template file per resource, `required` checks with `$_` and full value paths, all defaults in the chart's `values.yaml` and `values.schema.json`, Secrets created by the chart's `scripts/install.sh`, and profile order and flags in `deploy-set.json`.
 - **Helm 4 on the Mac.** Use `--rollback-on-failure` (Helm 3's `--atomic`); the profile `deploy.sh` translates it for Helm 3.
 

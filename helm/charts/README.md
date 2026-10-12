@@ -1,6 +1,6 @@
 # Helm charts
 
-All charts the homelab can use. A cluster profile in `../deployment/<env>/<cluster>/` decides which of them are deployed. The UTM development profile ([README](../deployment/dev/mac-utm-microk8s-cluster/README.md)) deploys:
+All charts the homelab can use. A cluster profile in `../deployment/<env>/<cluster>/` decides which of them are deployed. The UTM development profile ([README](../deployment/dev/local-microk8s-cluster-dev/README.md)) deploys:
 
 | Chart | Namespace | What it does |
 |---|---|---|

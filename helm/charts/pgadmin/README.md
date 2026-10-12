@@ -7,7 +7,7 @@ Runs pgAdmin in `hlab-frontend-apps` on port **5050** and publishes it through T
 Normally installed by the cluster profile's `deploy.sh`. To install it alone:
 
 ```sh
-./scripts/install.sh --values ../../deployment/dev/mac-utm-microk8s-cluster/pgadmin/values.yaml --wait
+./scripts/install.sh --values ../../deployment/dev/local-microk8s-cluster-dev/pgadmin/values.yaml --wait
 ```
 
 ## Secrets

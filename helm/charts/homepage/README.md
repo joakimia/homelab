@@ -7,7 +7,7 @@ Serves a small HTML page with Caddy in `hlab-frontend-apps`, published through T
 Normally installed by the cluster profile's `deploy.sh`. To install it alone:
 
 ```sh
-./scripts/install.sh --values ../../deployment/dev/mac-utm-microk8s-cluster/homepage/values.yaml --wait
+./scripts/install.sh --values ../../deployment/dev/local-microk8s-cluster-dev/homepage/values.yaml --wait
 ```
 
 No Secrets are needed.
