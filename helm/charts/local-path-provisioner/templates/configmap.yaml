@@ -1,0 +1,41 @@
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "nodePath is required" .Values.nodePath -}}
+{{- $_ := required "helperImage settings are required" .Values.helperImage -}}
+{{- $_ := required "helperImage.repository is required" .Values.helperImage.repository -}}
+{{- $_ := required "helperImage.tag is required" .Values.helperImage.tag -}}
+{{- $_ := required "helperImage.pullPolicy is required" .Values.helperImage.pullPolicy -}}
+# config.json maps nodes to volume folders; setup/teardown run in the helper pod, which the
+# provisioner starts with the volume folder mounted from the node (hostPath).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "local-path-provisioner.fullname" . }}-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "local-path-provisioner.labels" . | nindent 4 }}
+data:
+  config.json: |-
+    {{- dict "nodePathMap" (list (dict "node" "DEFAULT_PATH_FOR_NON_LISTED_NODES" "paths" (list .Values.nodePath))) | toPrettyJson | nindent 4 }}
+  setup: |-
+    #!/bin/sh
+    set -eu
+    mkdir -m 0777 -p "$VOL_DIR"
+  teardown: |-
+    #!/bin/sh
+    set -eu
+    rm -rf "$VOL_DIR"
+  helperPod.yaml: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: helper-pod
+    spec:
+      priorityClassName: system-node-critical
+      tolerations:
+        - key: node.kubernetes.io/disk-pressure
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: helper-pod
+          image: "{{ .Values.helperImage.repository }}:{{ .Values.helperImage.tag }}"
+          imagePullPolicy: {{ .Values.helperImage.pullPolicy }}

@@ -1,0 +1,9 @@
+apiVersion: v2
+name: local-path-provisioner
+description: Rancher local-path-provisioner, node-local PersistentVolumes for clusters without a storage addon (RKE2).
+
+type: application
+
+version: 0.1.0
+
+appVersion: 0.0.37

@@ -12,6 +12,7 @@
         "backgroundWorkers",
         "database",
         "filestore",
+        "storage",
         "platform",
         "tools",
         "observability"
@@ -24,6 +25,7 @@
         "backgroundWorkers": { "$ref": "#/definitions/namespace" },
         "database": { "$ref": "#/definitions/namespace" },
         "filestore": { "$ref": "#/definitions/namespace" },
+        "storage": { "$ref": "#/definitions/namespace" },
         "platform": { "$ref": "#/definitions/namespace" },
         "tools": { "$ref": "#/definitions/namespace" },
         "observability": { "$ref": "#/definitions/namespace" }

@@ -1,0 +1,100 @@
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "image settings are required" .Values.image -}}
+{{- $_ := required "image.repository is required" .Values.image.repository -}}
+{{- $_ := required "image.tag is required" .Values.image.tag -}}
+{{- $_ := required "image.pullPolicy is required" .Values.image.pullPolicy -}}
+{{- $_ := required "provisionerName is required" .Values.provisionerName -}}
+{{- $_ := required "healthPort is required" .Values.healthPort -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "local-path-provisioner.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "local-path-provisioner.labels" . | nindent 4 }}
+spec:
+  # One replica: the provisioner does not run leader election.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "local-path-provisioner.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "local-path-provisioner.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "local-path-provisioner.fullname" . }}
+      automountServiceAccountToken: true
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: local-path-provisioner
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - local-path-provisioner
+            - start
+            - --config=/etc/config/config.json
+            - --provisioner-name={{ .Values.provisionerName }}
+            - --configmap-name={{ include "local-path-provisioner.fullname" . }}-config
+            - --service-account-name={{ include "local-path-provisioner.fullname" . }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_MOUNT_PATH
+              value: /etc/config/
+            - name: HEALTH_PORT
+              value: {{ .Values.healthPort | quote }}
+          ports:
+            - name: health
+              containerPort: {{ .Values.healthPort }}
+              protocol: TCP
+          # The image is scratch with a static binary that only talks to the API server;
+          # the helper pods do the work on the node.
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/config/
+          startupProbe:
+            httpGet:
+              path: /health
+              port: health
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: health
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: health
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "local-path-provisioner.fullname" . }}-config

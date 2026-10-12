@@ -1,0 +1,12 @@
+# RKE2 has no storage addon: local-path-provisioner runs in hlab-storage and provisions
+# homelab-pvc-storage volumes as folders on the node.
+namespaces:
+  storage:
+    enabled: true
+
+storageClass:
+  enabled: true
+  name: homelab-pvc-storage
+  provisioner: rancher.io/local-path
+  reclaimPolicy: Delete
+  volumeBindingMode: WaitForFirstConsumer

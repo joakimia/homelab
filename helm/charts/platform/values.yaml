@@ -41,6 +41,12 @@ namespaces:
     purpose: filestore
     podSecurityEnforce: baseline
     enabled: false
+  # Privileged: local-path-provisioner helper pods mount the node folder (hostPath).
+  storage:
+    name: hlab-storage
+    purpose: storage
+    podSecurityEnforce: privileged
+    enabled: false
   tools:
     name: hlab-tools
     purpose: tools

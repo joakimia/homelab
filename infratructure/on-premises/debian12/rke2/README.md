@@ -34,7 +34,7 @@ Then check on the node: `cloud-init status --long`, `sudo systemctl status rke2-
 
 ## Not done yet
 
-- **Storage:** RKE2 has no default StorageClass. The UTM Helm profile's `homelab-pvc-storage` uses the MicroK8s hostpath provisioner, so an RKE2 Helm profile needs another provisioner, for example local-path or Longhorn.
+- **Storage:** RKE2 has no default StorageClass. The [RKE2 Helm profile](../../../../helm/deployment/dev/homelab-rke2-cluster-dev/README.md) deploys local-path-provisioner behind `homelab-pvc-storage` (single node only); Longhorn is an option for several nodes.
 - **Joining nodes:** the worker seed does not join the control plane yet.
 - **LAN networking and DNS:** not defined yet.
-- **Helm profile:** there is no RKE2 profile in `helm/deployment/` yet.
+- **Helm profile:** `helm/deployment/dev/homelab-rke2-cluster-dev` exists but has not been deployed yet.

@@ -11,6 +11,12 @@ All charts the homelab can use. A cluster profile in `../deployment/<env>/<clust
 | [`pgadmin`](pgadmin/README.md) | `hlab-frontend-apps` | pgAdmin on 5050, `http://pgadmin.homelab.com:8080/`. |
 | [`homepage`](homepage/README.md) | `hlab-frontend-apps` | Caddy page, `http://homepage.homelab.com:8080/`. |
 
+The [RKE2 development profile](../deployment/dev/homelab-rke2-cluster-dev/README.md) (work in progress) deploys the same charts plus:
+
+| Chart | Namespace | What it does |
+|---|---|---|
+| [`local-path-provisioner`](local-path-provisioner/README.md) | `hlab-storage` | Node-local volumes for `homelab-pvc-storage` on clusters without a storage addon. |
+
 The other directories (Grafana, Loki, cert-manager, and so on) are scaffolds and are not deployed.
 
 ## How a chart is laid out

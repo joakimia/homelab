@@ -1,0 +1,37 @@
+image:
+  repository: docker.io/rancher/local-path-provisioner
+  tag: v0.0.37
+  pullPolicy: IfNotPresent
+
+# Runs the setup and teardown scripts that create and remove volume folders on the node.
+helperImage:
+  repository: docker.io/library/busybox
+  tag: 1.37.0
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+
+namespace: hlab-storage
+
+# Name that StorageClasses use in their provisioner field (set in the platform chart).
+provisionerName: rancher.io/local-path
+
+# Folder on each node where volumes are created as subfolders.
+nodePath: /opt/local-path-provisioner
+
+# Port for /health and /ready inside the pod only.
+healthPort: 8080
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+podAnnotations: {}
+
+nodeSelector: {}
+
+tolerations: []
