@@ -1,0 +1,3 @@
+# expect: missing property 'DB_HOST'
+defaultEnv:
+  DB_HOST: null

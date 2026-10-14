@@ -1,7 +1,9 @@
 {{- $_ := required "namespace is required" .Values.namespace -}}
-{{- $_ := required "ports settings are required" .Values.ports -}}
-{{- $_ := required "ports.web.containerPort is required" .Values.ports.web.containerPort -}}
-{{- $_ := required "ports.websecure.containerPort is required" .Values.ports.websecure.containerPort -}}
+{{- $_ := required "service settings are required" .Values.service -}}
+{{- $_ := required "service.type is required" .Values.service.type -}}
+{{- $_ := required "service.ports settings are required" .Values.service.ports -}}
+{{- $_ := required "service.ports.web is required" .Values.service.ports.web -}}
+{{- $_ := required "service.ports.websecure is required" .Values.service.ports.websecure -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,15 +12,15 @@ metadata:
   labels:
     {{- include "traefik.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.service.type }}
   selector:
     {{- include "traefik.selectorLabels" . | nindent 4 }}
   ports:
     - name: web
-      port: {{ .Values.ports.web.containerPort }}
+      port: {{ .Values.service.ports.web }}
       targetPort: web
       protocol: TCP
     - name: websecure
-      port: {{ .Values.ports.websecure.containerPort }}
+      port: {{ .Values.service.ports.websecure }}
       targetPort: websecure
       protocol: TCP

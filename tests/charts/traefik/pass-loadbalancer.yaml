@@ -1,0 +1,12 @@
+# expect: type: LoadBalancer
+# expect: port: 443
+ports:
+  web:
+    hostPort: null
+  websecure:
+    hostPort: null
+service:
+  type: LoadBalancer
+  ports:
+    web: 80
+    websecure: 443

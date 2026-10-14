@@ -1,0 +1,9 @@
+apiVersion: v2
+name: cert-issuers
+description: Homelab certificate issuers for cert-manager, a ClusterIssuer backed by a local CA.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 0.1.0

@@ -1,27 +1,11 @@
+namespace: hlab-networking
+
+name: traefik
+
 image:
   repository: traefik
   tag: v3.7.14
   pullPolicy: IfNotPresent
-
-nameOverride: ""
-
-namespace: hlab-networking
-
-# Unprivileged ports: HTTP on 8080 and HTTPS on 8443 on the node, the dashboard/ping
-# entrypoint on 9000 inside the pod only.
-ports:
-  web:
-    containerPort: 8080
-    hostPort: 8080
-  websecure:
-    containerPort: 8443
-    hostPort: 8443
-  api:
-    containerPort: 9000
-
-ingressClass:
-  name: traefik
-  isDefaultClass: false
 
 replicaCount: 1
 
@@ -32,6 +16,70 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+
+podSecurityContext: {}
+
+probes:
+  startup:
+    httpGet:
+      path: /ping
+      port: traefik
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 12
+  readiness:
+    httpGet:
+      path: /ping
+      port: traefik
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  liveness:
+    httpGet:
+      path: /ping
+      port: traefik
+    initialDelaySeconds: 0
+    periodSeconds: 20
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+ports:
+  web:
+    containerPort: 8080
+    hostPort: 8080
+  websecure:
+    containerPort: 8443
+    hostPort: 8443
+  traefik:
+    containerPort: 9000
+
+service:
+  type: ClusterIP
+  ports:
+    web: 8080
+    websecure: 8443
+
+ingress:
+  className: traefik
+  isDefaultClass: false
+
+# ForwardAuth middleware authelia@file. An Ingress opts in with the annotation
+# traefik.ingress.kubernetes.io/router.middlewares: authelia@file.
+forwardAuth:
+  enabled: true
+  address: http://authelia.hlab-platform.svc.cluster.local:9091/api/authz/forward-auth
+  authResponseHeaders: [Remote-User, Remote-Groups, Remote-Email, Remote-Name]
 
 podAnnotations: {}
 

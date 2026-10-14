@@ -9,6 +9,7 @@
 {{- $pgadminSelector := .Values.networkPolicies.pgadmin.podSelector }}
 {{- $pgbouncerSelector := .Values.networkPolicies.pgbouncer.podSelector }}
 {{- $postgresSelector := .Values.networkPolicies.postgres.podSelector }}
+{{- $postgresSetupSelector := .Values.networkPolicies.postgresSetup.podSelector }}
 {{- if $networking.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -102,7 +103,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-pgadmin-egress-to-pgbouncer
+  name: allow-pgadmin-egress-to-database
   namespace: {{ $frontend.name }}
 spec:
   podSelector:
@@ -118,9 +119,15 @@ spec:
           podSelector:
             matchLabels:
               {{- toYaml $pgbouncerSelector | nindent 14 }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $database.name }}
+          podSelector:
+            matchLabels:
+              {{- toYaml $postgresSelector | nindent 14 }}
       ports:
         - protocol: TCP
-          port: 6432
+          port: postgresql
 ---
 {{- end }}
 {{- if $database.enabled }}
@@ -179,12 +186,12 @@ spec:
               {{- toYaml $pgadminSelector | nindent 14 }}
       ports:
         - protocol: TCP
-          port: 6432
+          port: postgresql
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-pgbouncer-to-postgres
+  name: allow-clients-to-postgres
   namespace: {{ $database.name }}
 spec:
   podSelector:
@@ -193,13 +200,23 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # PgBouncer for apps, the setup Job, and pgAdmin directly (admin sessions do not work well through a pooler).
     - from:
         - podSelector:
             matchLabels:
               {{- toYaml $pgbouncerSelector | nindent 14 }}
+        - podSelector:
+            matchLabels:
+              {{- toYaml $postgresSetupSelector | nindent 14 }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $frontend.name }}
+          podSelector:
+            matchLabels:
+              {{- toYaml $pgadminSelector | nindent 14 }}
       ports:
         - protocol: TCP
-          port: 5432
+          port: postgresql
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -219,6 +236,27 @@ spec:
               {{- toYaml $postgresSelector | nindent 14 }}
       ports:
         - protocol: TCP
-          port: 5432
+          port: postgresql
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres-setup-egress-to-postgres
+  namespace: {{ $database.name }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- toYaml $postgresSetupSelector | nindent 6 }}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $postgresSelector | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: postgresql
 {{- end }}
 {{- end }}

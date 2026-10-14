@@ -1,6 +1,6 @@
 {{- define "platform.validateValues" -}}
 {{- $namespaces := required "namespaces is required" .Values.namespaces -}}
-{{- range $key := list "networking" "frontend" "backendApi" "backgroundWorkers" "database" "filestore" "platform" "tools" "observability" -}}
+{{- range $key := list "networking" "frontend" "backendApi" "backgroundWorkers" "database" "filestore" "storage" "platform" "tools" "observability" -}}
   {{- $namespace := required (printf "namespaces.%s is required" $key) (get $namespaces $key) -}}
   {{- $_ := required (printf "namespaces.%s.name is required" $key) $namespace.name -}}
   {{- $_ := required (printf "namespaces.%s.purpose is required" $key) $namespace.purpose -}}
@@ -14,7 +14,7 @@
   {{- $dns := required "networkPolicies.dns is required when network policies are enabled" $policies.dns -}}
   {{- $_ := required "networkPolicies.dns.namespace is required" $dns.namespace -}}
   {{- $_ := required "networkPolicies.dns.podSelector is required" $dns.podSelector -}}
-  {{- range $key := list "traefik" "pgadmin" "pgbouncer" "postgres" -}}
+  {{- range $key := list "traefik" "pgadmin" "pgbouncer" "postgres" "postgresSetup" -}}
     {{- $workload := required (printf "networkPolicies.%s is required" $key) (get $policies $key) -}}
     {{- $_ := required (printf "networkPolicies.%s.podSelector is required" $key) $workload.podSelector -}}
   {{- end -}}

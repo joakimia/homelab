@@ -1,0 +1,36 @@
+# Upstream chart values go under the dependency name.
+cert-manager:
+  crds:
+    enabled: true
+    # Keep CRDs (and so all Certificates) on uninstall.
+    keep: true
+  # No Prometheus in the cluster yet.
+  prometheus:
+    enabled: false
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+  webhook:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+  cainjector:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+  startupapicheck:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi

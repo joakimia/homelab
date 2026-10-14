@@ -10,8 +10,8 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
 | Kind | Reference | Runs on |
 |---|---|---|
 | Multi-mode entry point | `infratructure/on-premises/debian12/install.sh` | Mac or Linux host, remote code over SSH |
-| Profile deploy loop | `helm/deployment/dev/mac-utm-microk8s-cluster/deploy.sh` | Mac, or the node with `--local` |
-| Bundle and run over SSH | `helm/deployment/dev/mac-utm-microk8s-cluster/install.sh` | Mac |
+| Profile deploy loop | `helm/deployment/dev/local-microk8s-cluster-dev/deploy.sh` | Mac, or the node with `--local` |
+| Bundle and run over SSH | `helm/deployment/dev/local-microk8s-cluster-dev/install.sh` | Mac |
 | Single chart installer | `helm/charts/postgres/scripts/install.sh` | wherever `helm`/`kubectl` work |
 | Seed script block | `runcmd` blocks in `*/cloud-init.yaml` | the node, as POSIX `sh` (dash) |
 
@@ -50,7 +50,7 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
   - Exit codes: 2 for usage errors, 1 for failures.
 - **Say what is happening.** Print a short line before each slow or remote step ("Copying ... to $target...") and print where outputs went. Errors go to stderr.
 - **Idempotent reruns.** Create Secrets or keys only if missing, use `helm upgrade --install`, and replace bundle directories instead of extracting on top of old files.
-- **Outputs go to the caller's directory.** Write generated files (ISOs, `.local/homelab-kubeconfig`) under `$PWD` unless a path is passed. Use `mktemp` for anything temporary. Make sure generated credentials land in ignored paths (`.local/`, `*.iso`).
+- **Outputs go to the caller's directory.** Write generated files (ISOs, `.local/<cluster>.kubeconfig`) under `$PWD` unless a path is passed. Use `mktemp` for anything temporary. Make sure generated credentials land in ignored paths (`.local/`, `*.iso`).
 - **Cleanup.** Use `trap '...' EXIT` for temp files and SSH control sockets.
   - Variables a trap reads must still exist when it fires: keep them global (with a comment saying so), or expand them when the trap is set (`trap "rm -rf '$dir'" EXIT`, with `# shellcheck disable=SC2064 # expand now: ...`). Do not use `local` for them.
 - **SSH.** Share one connection so a password is asked only once:
@@ -72,6 +72,7 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
 
 ## Checks before you finish
 
+- Update `tests/check.sh` with the script: a new entry point goes into `check_usage`, a new check into its own group.
 - Run `tests/check.sh` (the same checks as CI): `bash -n`, `shellcheck -S warning`, seed checks, chart lint, and usage exits. Fix shellcheck warnings rather than disabling them; when a disable is intentional, add the reason on the same line. Write empty locals as `x=''`, not `x=`.
 - `dash -n` on extracted `runcmd` blocks, for example in a `debian:12` container.
 - Run the usage paths: no arguments and wrong arguments must print usage and exit 2.

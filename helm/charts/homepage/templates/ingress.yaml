@@ -1,14 +1,44 @@
+{{- $_ := required "name is required" .Values.name -}}
 {{- $_ := required "namespace is required" .Values.namespace -}}
 {{- $_ := required "host is required" .Values.host -}}
 {{- $_ := required "service settings are required" .Values.service -}}
 {{- $_ := required "service.port is required" .Values.service.port -}}
+{{- $_ := required "ingress settings are required" .Values.ingress -}}
+{{- $_ := required "ingress.className is required" .Values.ingress.className -}}
+{{- $_ := required "ingress.tls settings are required" .Values.ingress.tls -}}
+{{- if .Values.ingress.tls.enabled }}
+{{- $_ := required "ingress.tls.clusterIssuer is required when ingress.tls.enabled is true" .Values.ingress.tls.clusterIssuer -}}
+{{- end }}
+{{- $_ := required "ingress.auth settings are required" .Values.ingress.auth -}}
+{{- if .Values.ingress.auth.enabled }}
+{{- $_ := required "ingress.auth.middleware is required when ingress.auth.enabled is true" .Values.ingress.auth.middleware -}}
+{{- if not .Values.ingress.tls.enabled }}
+{{- fail "ingress.auth.enabled needs ingress.tls.enabled: the login cookie only works over HTTPS" -}}
+{{- end }}
+{{- end }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: homepage
+  name: {{ .Values.name }}
   namespace: {{ .Values.namespace }}
+  {{- if or .Values.ingress.tls.enabled .Values.ingress.auth.enabled }}
+  annotations:
+    {{- if .Values.ingress.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.clusterIssuer | quote }}
+    {{- end }}
+    {{- if .Values.ingress.auth.enabled }}
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Values.ingress.auth.middleware }}
+    {{- end }}
+  {{- end }}
 spec:
-  ingressClassName: traefik
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.host | quote }}
+      secretName: {{ .Values.name }}-tls
+  {{- end }}
   rules:
     - host: {{ .Values.host | quote }}
       http:
@@ -17,7 +47,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: homepage
+                name: {{ .Values.name }}
                 port:
                   number: {{ .Values.service.port }}
     - http:
@@ -26,6 +56,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: homepage
+                name: {{ .Values.name }}
                 port:
                   number: {{ .Values.service.port }}

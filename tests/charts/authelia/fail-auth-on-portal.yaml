@@ -1,0 +1,4 @@
+# expect: value must be false
+ingress:
+  auth:
+    enabled: true

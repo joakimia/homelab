@@ -9,6 +9,10 @@ rules:
   - apiGroups: [""]
     resources: ["services", "endpoints", "secrets", "nodes"]
     verbs: ["get", "list", "watch"]
+  # Traefik 3 finds backend pods through EndpointSlices; without this no route is loaded (404).
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses", "ingressclasses"]
     verbs: ["get", "list", "watch"]

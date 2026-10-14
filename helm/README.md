@@ -1,7 +1,7 @@
 # Helm
 
 - `charts/` holds every chart the homelab can use, one per application or platform component. Some are scaffolds. See [charts/README.md](charts/README.md) for the layout conventions.
-- `deployment/<env>/<cluster>/` is a cluster profile. It decides which charts that cluster gets and how. Current profile: [dev/mac-utm-microk8s-cluster](deployment/dev/mac-utm-microk8s-cluster/README.md).
+- `deployment/<env>/<cluster>/` is a cluster profile. It decides which charts that cluster gets and how. The folder name is the name of the cluster the profile deploys to. Current profile: [dev/local-microk8s-cluster-dev](deployment/dev/local-microk8s-cluster-dev/README.md).
 
 ## How a deployment works
 

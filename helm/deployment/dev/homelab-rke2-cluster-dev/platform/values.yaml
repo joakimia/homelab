@@ -1,0 +1,16 @@
+# Optional environment specific override values for the homelab RKE2 cluster goes here
+# If no override values are needed, this file can be left empty.
+# It must be defined however, if you want to deploy the chart in this environment.
+
+# RKE2 has no storage addon: local-path-provisioner runs in hlab-storage and provisions
+# homelab-pvc-storage volumes as folders on the node.
+namespaces:
+  storage:
+    enabled: true
+
+storageClass:
+  enabled: true
+  name: homelab-pvc-storage
+  provisioner: rancher.io/local-path
+  reclaimPolicy: Delete
+  volumeBindingMode: WaitForFirstConsumer

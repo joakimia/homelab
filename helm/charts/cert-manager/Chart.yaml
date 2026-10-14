@@ -1,0 +1,16 @@
+apiVersion: v2
+name: cert-manager
+description: cert-manager (upstream Jetstack chart as a pinned dependency), issues TLS certificates for the homelab Ingresses.
+
+type: application
+
+version: 0.1.0
+
+appVersion: v1.21.2
+
+# The upstream chart is pulled from its OCI registry by scripts/install.sh (helm dependency build,
+# pinned by Chart.lock). Issuers live in the cert-issuers chart: they need these CRDs to exist first.
+dependencies:
+  - name: cert-manager
+    version: 1.21.2
+    repository: oci://quay.io/jetstack/charts

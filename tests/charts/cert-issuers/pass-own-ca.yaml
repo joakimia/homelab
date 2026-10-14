@@ -1,0 +1,4 @@
+# expect: secretName: my-own-ca
+secrets:
+  ca:
+    name: my-own-ca

@@ -1,0 +1,6 @@
+# expect: ingress.auth.enabled needs ingress.tls.enabled
+ingress:
+  tls:
+    enabled: false
+  auth:
+    enabled: true

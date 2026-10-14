@@ -1,0 +1,16 @@
+{{- $_ := required "namespace is required" .Values.namespace -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "local-path-provisioner.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "local-path-provisioner.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "local-path-provisioner.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "local-path-provisioner.fullname" . }}
+    namespace: {{ .Values.namespace }}

@@ -63,5 +63,8 @@ nunit-*.xml
 
 *.iso
 
+# Chart dependencies, fetched by helm dependency build from Chart.lock.
+helm/charts/*/charts/
+
 # Finder metadata
 .DS_Store

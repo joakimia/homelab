@@ -1,0 +1,17 @@
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "storage settings are required" .Values.storage -}}
+{{- $_ := required "storage.size is required" .Values.storage.size -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.name }}-data
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- with .Values.storage.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.storage.size }}

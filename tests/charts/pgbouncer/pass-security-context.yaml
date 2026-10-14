@@ -1,0 +1,7 @@
+# Overlays can harden a chart whose default security context is empty.
+# expect: allowPrivilegeEscalation: false
+# expect: runAsNonRoot: true
+podSecurityContext:
+  runAsNonRoot: true
+securityContext:
+  allowPrivilegeEscalation: false

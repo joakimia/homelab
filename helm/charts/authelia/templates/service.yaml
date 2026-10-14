@@ -1,0 +1,19 @@
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "service.port is required" .Values.service.port -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ .Values.name }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP

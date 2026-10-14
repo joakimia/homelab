@@ -1,11 +1,12 @@
-{{- $_ := required "ingressClass.name is required" .Values.ingressClass.name -}}
+{{- $_ := required "ingress settings are required" .Values.ingress -}}
+{{- $_ := required "ingress.className is required" .Values.ingress.className -}}
 apiVersion: networking.k8s.io/v1
 kind: IngressClass
 metadata:
-  name: {{ .Values.ingressClass.name }}
+  name: {{ .Values.ingress.className }}
   labels:
     {{- include "traefik.labels" . | nindent 4 }}
-  {{- if .Values.ingressClass.isDefaultClass }}
+  {{- if .Values.ingress.isDefaultClass }}
   annotations:
     ingressclass.kubernetes.io/is-default-class: "true"
   {{- end }}

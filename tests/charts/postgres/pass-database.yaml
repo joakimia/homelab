@@ -1,0 +1,5 @@
+# expect: echo "Database grafana"
+# expect: helm.sh/hook: post-install,post-upgrade
+databases:
+  grafana:
+    owner: homelab-admin

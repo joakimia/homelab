@@ -10,7 +10,7 @@ Provision a Debian 12 VM in UTM with cloud-init, then deploy the development Hel
 
 ```sh
 infratructure/on-premises/debian12/install.sh microk8s control-plane-node debian@<vm-ip>
-helm/deployment/dev/mac-utm-microk8s-cluster/install.sh debian@<vm-ip>
+helm/deployment/dev/local-microk8s-cluster-dev/install.sh debian@<vm-ip>
 ```
 
 The UTM profile is the first working target. RKE2 seeds, the jumpbox, and many charts are still work in progress or scaffolds.

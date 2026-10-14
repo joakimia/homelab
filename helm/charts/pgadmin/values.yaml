@@ -1,19 +1,13 @@
 namespace: hlab-frontend-apps
 
-image:
-  repository: dpage/pgadmin4
-  tag: "9.17"
-  pullPolicy: IfNotPresent
+name: pgadmin
 
 host: pgadmin.homelab.com
 
-existingSecret: pgadmin-credentials
-emailSecretKey: PGADMIN_DEFAULT_EMAIL
-passwordSecretKey: PGADMIN_DEFAULT_PASSWORD
-
-service:
-  port: 5050
-  containerPort: 5050
+image:
+  repository: dpage/pgadmin4
+  tag: 9.17
+  pullPolicy: IfNotPresent
 
 replicaCount: 1
 
@@ -24,3 +18,63 @@ resources:
   limits:
     cpu: 750m
     memory: 768Mi
+
+securityContext: {}
+
+podSecurityContext: {}
+
+probes:
+  startup:
+    httpGet:
+      path: /misc/ping
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    httpGet:
+      path: /misc/ping
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  liveness:
+    httpGet:
+      path: /misc/ping
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+service:
+  port: 5050
+  containerPort: 5050
+
+ingress:
+  className: traefik
+  # Certificate for host from cert-manager (needs the cert-manager and cert-issuers charts).
+  tls:
+    enabled: true
+    clusterIssuer: homelab-ca
+  # Login through Authelia (Traefik ForwardAuth); the route is then HTTPS only.
+  auth:
+    enabled: false
+    middleware: authelia@file
+
+defaultEnv:
+  PGADMIN_LISTEN_PORT: "{{ .Values.service.containerPort }}"
+
+env: {} # Override defaultEnv or add additional environment variables as needed
+
+defaultSecrets:
+  # Initial pgAdmin login.
+  login:
+    name: pgadmin-credentials
+    env:
+      PGADMIN_DEFAULT_EMAIL: PGADMIN_DEFAULT_EMAIL
+      PGADMIN_DEFAULT_PASSWORD: PGADMIN_DEFAULT_PASSWORD
+
+secrets: {} # Override defaultSecrets or add additional secrets as needed

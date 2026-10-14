@@ -6,11 +6,12 @@ namespaces:
     purpose: networking
     podSecurityEnforce: privileged
     enabled: true
+  # cert-manager. No NetworkPolicies: the API server must reach its webhook.
   platform:
     name: hlab-platform
     purpose: platform
     podSecurityEnforce: baseline
-    enabled: false
+    enabled: true
   observability:
     name: hlab-observability
     purpose: observability
@@ -41,6 +42,12 @@ namespaces:
     purpose: filestore
     podSecurityEnforce: baseline
     enabled: false
+  # Privileged: local-path-provisioner helper pods mount the node folder (hostPath).
+  storage:
+    name: hlab-storage
+    purpose: storage
+    podSecurityEnforce: privileged
+    enabled: false
   tools:
     name: hlab-tools
     purpose: tools
@@ -56,8 +63,8 @@ networkPolicies:
   traefik:
     podSelector:
       app.kubernetes.io/name: traefik
-    # Traefik's container ports (web and websecure) that may receive outside traffic.
-    ports: [8080, 8443]
+    # Traefik container port names open to outside traffic.
+    ports: [web, websecure]
   pgadmin:
     podSelector:
       app.kubernetes.io/name: pgadmin
@@ -67,6 +74,10 @@ networkPolicies:
   postgres:
     podSelector:
       app.kubernetes.io/name: postgres
+  # The postgres chart's setup Job (roles and databases).
+  postgresSetup:
+    podSelector:
+      app.kubernetes.io/name: postgres-setup
 
 # Environment profiles can provide a cluster-specific provisioner behind a
 # stable storage class name used by application charts.

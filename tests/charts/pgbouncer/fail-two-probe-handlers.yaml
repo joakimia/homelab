@@ -1,0 +1,6 @@
+# expect: oneOf
+probes:
+  readiness:
+    httpGet:
+      path: /
+      port: postgresql

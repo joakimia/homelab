@@ -1,0 +1,29 @@
+{{- $_ := required "clusterIssuer settings are required" .Values.clusterIssuer -}}
+{{- $_ := required "clusterIssuer.name is required" .Values.clusterIssuer.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "defaultSecrets settings are required" .Values.defaultSecrets -}}
+{{- $_ := required "defaultSecrets.ca settings are required" .Values.defaultSecrets.ca -}}
+{{- $_ := required "defaultSecrets.ca.name is required" .Values.defaultSecrets.ca.name -}}
+{{- $_ := required "defaultSecrets.ca.keys settings are required" .Values.defaultSecrets.ca.keys -}}
+{{- $_ := required "defaultSecrets.ca.keys.certificate is required" .Values.defaultSecrets.ca.keys.certificate -}}
+{{- $_ := required "defaultSecrets.ca.keys.privateKey is required" .Values.defaultSecrets.ca.keys.privateKey -}}
+{{- $ca := (mergeOverwrite (deepCopy .Values.defaultSecrets) (deepCopy (.Values.secrets | default dict))).ca -}}
+{{- /* Only when installing (lookup is empty in helm template and lint): the Secret and its keys must exist. */ -}}
+{{- if lookup "v1" "Namespace" "" "kube-system" -}}
+{{- $secret := lookup "v1" "Secret" .Values.namespace $ca.name -}}
+{{- if not $secret -}}
+{{- fail (printf "Secret %s/%s is missing; scripts/install.sh creates it" .Values.namespace $ca.name) -}}
+{{- end -}}
+{{- range $key := values $ca.keys -}}
+{{- if not (hasKey ($secret.data | default dict) $key) -}}
+{{- fail (printf "Secret %s/%s has no key %s" $secret.metadata.namespace $secret.metadata.name $key) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.clusterIssuer.name }}
+spec:
+  ca:
+    secretName: {{ $ca.name }}
