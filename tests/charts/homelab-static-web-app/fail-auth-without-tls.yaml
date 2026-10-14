@@ -1,0 +1,8 @@
+# expect: ingress.auth.enabled needs ingress.tls.enabled
+name: site
+host: site.homelab.com
+ingress:
+  tls:
+    enabled: false
+  auth:
+    enabled: true

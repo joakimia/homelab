@@ -1,0 +1,9 @@
+apiVersion: v2
+name: homelab-cron-job
+description: Base chart for a scheduled shell script (CronJob) with optional cluster-wide RBAC. The homelab chart uses it for periodic-cleanup.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 1.0.0

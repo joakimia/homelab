@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "host",
+    "ingress",
+    "grafana"
+  ],
+  "properties": {
+    "host": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ingress": {
+      "type": "object",
+      "required": [
+        "className",
+        "tls",
+        "auth"
+      ],
+      "properties": {
+        "className": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tls": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "clusterIssuer"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "clusterIssuer": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "auth": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "middleware"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "middleware": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "grafana": {
+      "type": "object",
+      "required": [
+        "fullnameOverride",
+        "admin",
+        "persistence",
+        "grafana.ini",
+        "dashboardsConfigMaps"
+      ],
+      "properties": {
+        "fullnameOverride": {
+          "type": "string",
+          "minLength": 1
+        },
+        "admin": {
+          "type": "object",
+          "required": [
+            "existingSecret",
+            "userKey",
+            "passwordKey"
+          ],
+          "properties": {
+            "existingSecret": {
+              "type": "string",
+              "minLength": 1
+            },
+            "userKey": {
+              "type": "string",
+              "minLength": 1
+            },
+            "passwordKey": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "persistence": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "type"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "type": {
+              "const": "statefulset"
+            }
+          }
+        },
+        "grafana.ini": {
+          "type": "object"
+        },
+        "dashboardsConfigMaps": {
+          "type": "object",
+          "required": [
+            "homelab"
+          ],
+          "properties": {
+            "homelab": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "global": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

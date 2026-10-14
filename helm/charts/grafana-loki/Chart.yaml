@@ -1,0 +1,17 @@
+apiVersion: v2
+name: grafana-loki
+description: Grafana Loki (upstream grafana-community chart as a pinned dependency), log storage for the homelab in monolithic mode.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 3.7.8
+
+# The upstream chart is pulled from its OCI registry by scripts/install.sh (helm dependency build,
+# pinned by Chart.lock). The grafana/loki chart now packages Grafana Enterprise Logs; the
+# open-source chart moved to grafana-community.
+dependencies:
+  - name: loki
+    version: 18.15.1
+    repository: oci://ghcr.io/grafana-community/helm-charts

@@ -1,0 +1,15 @@
+# expect: kind: ClusterRole
+# expect: name: hlab-tools-report
+# expect: automountServiceAccountToken: true
+# expect: schedule: "0 * * * *"
+name: report
+image:
+  repository: alpine/kubectl
+  tag: 1.36.4
+schedule: 0 * * * *
+script: kubectl get pods -A
+rbac:
+  clusterRules:
+    - apiGroups: [""]
+      resources: [pods]
+      verbs: [list]

@@ -1,0 +1,7 @@
+# expect: ingress.catchAll does not work with ingress.auth
+name: site
+host: site.homelab.com
+ingress:
+  catchAll: true
+  auth:
+    enabled: true

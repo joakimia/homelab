@@ -56,7 +56,7 @@ defaultEnv:
   POOL_MODE: transaction
   DEFAULT_POOL_SIZE: 10
   # Route every database to PostgreSQL; set a name to allow only that one.
-  DB_NAME: '*'
+  DB_NAME: "*"
 
 env: {} # Override defaultEnv or add additional environment variables as needed
 

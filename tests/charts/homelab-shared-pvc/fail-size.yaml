@@ -1,0 +1,3 @@
+# expect: /size
+name: shared
+size: 1G

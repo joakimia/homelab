@@ -9,10 +9,12 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
 
 | Kind | Reference | Runs on |
 |---|---|---|
-| Multi-mode entry point | `infratructure/on-premises/debian12/install.sh` | Mac or Linux host, remote code over SSH |
+| Multi-mode entry point | `infratructure/on-premises/virtual-machine/debian12/install.sh` | Mac or Linux host, remote code over SSH |
 | Profile deploy loop | `helm/deployment/dev/local-microk8s-cluster-dev/deploy.sh` | Mac, or the node with `--local` |
 | Bundle and run over SSH | `helm/deployment/dev/local-microk8s-cluster-dev/install.sh` | Mac |
 | Single chart installer | `helm/charts/postgres/scripts/install.sh` | wherever `helm`/`kubectl` work |
+| Base chart installer (`<release>` argument) | `helm/charts/homelab-static-web-app/scripts/install.sh` | wherever `helm`/`kubectl` work |
+| Script run in a pod | `helm/charts/homelab/scripts/periodic-cleanup.sh` | a container, as POSIX `sh` (busybox) |
 | Seed script block | `runcmd` blocks in `*/cloud-init.yaml` | the node, as POSIX `sh` (dash) |
 
 ## Keep the number of scripts small
@@ -20,7 +22,7 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
 - **Add a mode, not a script.** A folder has at most the entry points that already exist there:
   - provisioning: one `debian12/install.sh`
   - Helm profile: `install.sh` and `deploy.sh`
-  - chart: `scripts/install.sh`
+  - chart: `scripts/install.sh`, plus scripts a chart ships into a pod (`homelab/scripts/`)
 - A new capability becomes a function plus a flag or mode in the existing script, for example `--iso`, `--kubeconfig`, `--local`, or the `jumpbox` mode.
 - Small one-off helpers become a README line, as the k9s command did, not a new file.
 - Do not create wrapper scripts that only `exec` another script.
@@ -69,6 +71,7 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
   - Detect bsdtar before using its flags (`--no-mac-metadata --no-xattrs`), and set `COPYFILE_DISABLE=1`.
   - Pick an available tool when there are alternatives, such as `hdiutil`, `xorriso`, or `genisoimage`.
 - **Cloud-init `runcmd` blocks run under `/bin/sh` (dash on Debian).** POSIX only: no arrays, `[[ ]]`, `${var/x/y}`, or `local`. Start with `set -e`, and pin versions and SHA-256 values as variables at the top of the block.
+- **Scripts that run in a pod** use `#!/bin/sh`, `set -eu`, and `export LC_ALL=C`, and only the tools in their image (`alpine/kubectl` has `kubectl` and busybox, no `jq`: use `-o jsonpath`). The root filesystem is read-only, so write to `/tmp` and set `HOME=/tmp`. Check them with `dash -n` and run them in their image as the pod's user, with a stub on `PATH` for tools that need a cluster.
 
 ## Checks before you finish
 

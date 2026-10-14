@@ -1,0 +1,2 @@
+# expect: loki.source.kubernetes_events "cluster"
+# expect: job_name   = "kubernetes-events"

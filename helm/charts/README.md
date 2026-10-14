@@ -11,16 +11,33 @@ All charts the homelab can use. A cluster profile in `../deployment/<env>/<clust
 | [`postgres`](postgres/README.md) | `hlab-database` | PostgreSQL with a PVC; creates `postgres-credentials`. |
 | [`pgbouncer`](pgbouncer/README.md) | `hlab-database` | Connection pool on 6432. |
 | [`pgadmin`](pgadmin/README.md) | `hlab-frontend-apps` | pgAdmin on 5050, `https://pgadmin.homelab.com:8443/`. |
-| [`homepage`](homepage/README.md) | `hlab-frontend-apps` | Caddy page, `https://homepage.homelab.com:8443/`. |
+| [`homelab`](homelab/README.md) | `hlab-frontend-apps`, `hlab-tools` | The homelab's own apps from the base charts: the homepage (`https://homepage.homelab.com:8443/`) and a daily cleanup of old Failed pods and finished Jobs. |
 | [`authelia`](authelia/README.md) | `hlab-platform` | Login portal, `https://auth.homelab.com:8443/` (MicroK8s profile only). |
+| [`prometheus`](prometheus/README.md) | `hlab-observability` | Upstream Prometheus server and kube-state-metrics, node-exporter in `hlab-observability-agents`; 3 days of metrics. |
+| [`grafana-loki`](grafana-loki/README.md) | `hlab-observability` | Upstream Loki, one pod with filesystem storage; 3 days of logs. |
+| [`grafana-tempo`](grafana-tempo/README.md) | `hlab-observability` | Upstream Tempo, single binary; 3 days of traces. |
+| [`grafana-alloy`](grafana-alloy/README.md) | `hlab-observability` | Upstream Alloy: pod logs and Kubernetes events to Loki, OTLP to Prometheus, Loki, and Tempo. |
+| [`grafana`](grafana/README.md) | `hlab-observability` | Upstream Grafana, `https://grafana.homelab.com:8443/`, with the three data sources and the Homelab dashboards (nodes, workloads, logs and events). |
 
 The [RKE2 development profile](../deployment/dev/homelab-rke2-cluster-dev/README.md) (work in progress) deploys the same charts plus:
 
 | Chart | Namespace | What it does |
 |---|---|---|
 | [`local-path-provisioner`](local-path-provisioner/README.md) | `hlab-storage` | Node-local volumes for `homelab-pvc-storage` on clusters without a storage addon. |
+| [`longhorn`](longhorn/README.md) | `hlab-storage` | Upstream Longhorn, opt-in `longhorn` StorageClass (work in progress). |
 
-The other directories (Grafana, Loki, and so on) are scaffolds and are not deployed.
+The observability charts and `homelab` pass `tests/check.sh` but have not been deployed yet. The other directories are scaffolds and are not deployed.
+
+## Base charts
+
+Small generic charts that the `homelab` chart includes as local dependencies, each under an alias:
+
+| Chart | What it makes |
+|---|---|
+| [`homelab-static-web-app`](homelab-static-web-app/README.md) | Caddy serving files from the values, with Service and Ingress. |
+| [`homelab-cron-job`](homelab-cron-job/README.md) | CronJob running a shell script, with optional cluster-wide RBAC. |
+| [`homelab-shared-pvc`](homelab-shared-pvc/README.md) | PersistentVolumeClaim kept on uninstall, for files several workloads share. |
+| [`homelab-job`](homelab-job/README.md) | Scaffold: a one-off Job. |
 
 ## How a chart is laid out
 

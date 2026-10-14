@@ -1,0 +1,4 @@
+# expect: /longhorn/ingress/enabled
+longhorn:
+  ingress:
+    enabled: true

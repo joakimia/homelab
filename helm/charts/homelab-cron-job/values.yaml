@@ -1,0 +1,59 @@
+namespace: hlab-tools
+
+name: ""  # required
+
+image:
+  repository: ""  # required
+  tag: ""  # required
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 128Mi
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+  seccompProfile:
+    type: RuntimeDefault
+
+podSecurityContext: {}
+
+# Cron syntax, in timeZone.
+schedule: ""  # required
+timeZone: Etc/UTC
+# Skip a run while the previous one is still going.
+concurrencyPolicy: Forbid
+# A run missed by more than this (node down) is skipped, not caught up.
+startingDeadlineSeconds: 600
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 3
+backoffLimit: 1
+activeDeadlineSeconds: 600
+
+# Shell script run with sh from /script/run.sh. /tmp is a writable emptyDir. Either the script
+# here, or an existing ConfigMap with key run.sh (a parent chart can fill it from its own files).
+script: ""
+scriptConfigMap: ""
+
+# ClusterRole rules for the script's ServiceAccount; with none, no token is mounted.
+rbac:
+  clusterRules: []
+
+defaultEnv:
+  # kubectl and other tools write their cache under $HOME.
+  HOME: /tmp
+
+env: {} # Override defaultEnv or add additional environment variables as needed
+
+defaultSecrets: {}
+
+secrets: {} # Override defaultSecrets or add additional secrets as needed

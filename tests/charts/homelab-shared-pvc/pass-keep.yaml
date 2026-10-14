@@ -1,0 +1,4 @@
+# expect: helm.sh/resource-policy: keep
+# expect: - ReadWriteMany
+name: shared
+accessModes: [ReadWriteMany]

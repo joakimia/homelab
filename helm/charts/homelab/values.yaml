@@ -1,0 +1,81 @@
+# Each key configures one base chart under its alias in Chart.yaml; see that chart's README
+# for every value.
+
+# The start page, a static web app (homelab-static-web-app).
+homelab-frontend:
+  enabled: true
+  namespace: hlab-frontend-apps
+  name: homepage
+  host: homepage.homelab.com
+  ingress:
+    # http://<node-ip>:8080/ opens the homepage too; profiles with ingress.auth turn this off.
+    catchAll: true
+  # Created by templates/configmap.yaml from static-assets/.
+  filesConfigMap: homepage-static-assets
+
+homelab-backend-for-frontend:
+  enabled: false
+  namespace: hlab-backend-api-apps
+  name: homelab-backend-for-frontend
+
+homelab-internal-api:
+  enabled: false
+  namespace: hlab-backend-api-apps
+  name: homelab-internal-api
+
+homelab-external-api:
+  enabled: false
+  namespace: hlab-backend-api-apps
+  name: homelab-external-api
+
+homelab-background-worker:
+  enabled: false
+  namespace: hlab-backend-background-worker-apps
+  name: homelab-background-worker
+
+homelab-llm:
+  enabled: false
+  namespace: hlab-backend-background-worker-apps
+  name: homelab-llm
+
+homelab-ai-agent:
+  enabled: false
+  namespace: hlab-backend-background-worker-apps
+  name: homelab-ai-agent
+
+# Deletes Kubernetes leftovers (scripts/periodic-cleanup.sh) older than RETENTION_DAYS in the
+# homelab namespaces (those with the platform chart's tier label). CronJobs keep their own
+# history, and Prometheus, Loki, and Tempo enforce their own retention, so their data is never
+# touched here.
+homelab-periodic-cleanup:
+  enabled: true
+  namespace: hlab-tools
+  name: periodic-cleanup
+  image:
+    repository: alpine/kubectl
+    tag: 1.36.4
+  schedule: 30 3 * * *
+  rbac:
+    clusterRules:
+      - apiGroups: [""]
+        resources: [namespaces]
+        verbs: [list]
+      - apiGroups: [""]
+        resources: [pods]
+        verbs: [list, delete]
+      - apiGroups: [batch]
+        resources: [jobs]
+        verbs: [list, delete]
+  defaultEnv:
+    RETENTION_DAYS: 7
+    # true: kubectl delete --dry-run=server, so the log lists what would be deleted.
+    DRY_RUN: false
+    NAMESPACE_LABEL: homelab.jamundsen.local/tier
+  # Created by templates/configmap.yaml from scripts/periodic-cleanup.sh.
+  scriptConfigMap: periodic-cleanup-script
+
+# A claim several apps can mount (homelab-shared-pvc). Off until an app needs shared files.
+homelab-shared-pvc:
+  namespace: hlab-filestore
+  enabled: false
+  name: homelab-shared

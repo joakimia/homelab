@@ -1,0 +1,17 @@
+apiVersion: v2
+name: longhorn
+description: Longhorn (upstream chart as a pinned dependency), replicated block storage for the RKE2 profile. Work in progress.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 1.13.0
+
+# The upstream chart is fetched by scripts/install.sh (helm dependency build, pinned by
+# Chart.lock). Its CRDs are templates in the upstream chart, and Longhorn creates its own
+# custom resources, so no second chart is needed.
+dependencies:
+  - name: longhorn
+    version: 1.13.0
+    repository: https://charts.longhorn.io

@@ -10,6 +10,10 @@
 {{- $pgbouncerSelector := .Values.networkPolicies.pgbouncer.podSelector }}
 {{- $postgresSelector := .Values.networkPolicies.postgres.podSelector }}
 {{- $postgresSetupSelector := .Values.networkPolicies.postgresSetup.podSelector }}
+{{- $observability := .Values.namespaces.observability }}
+{{- $grafanaSelector := .Values.networkPolicies.grafana.podSelector }}
+{{- $prometheusSelector := .Values.networkPolicies.prometheus.podSelector }}
+{{- $alloySelector := .Values.networkPolicies.alloy.podSelector }}
 {{- if $networking.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -258,5 +262,101 @@ spec:
       ports:
         - protocol: TCP
           port: postgresql
+---
+{{- end }}
+{{- if $observability.enabled }}
+{{- /* Ingress only: Prometheus, Alloy, and kube-state-metrics need egress to the API server and kubelets, which NetworkPolicies cannot select reliably. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: {{ $observability.name }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+{{- if $networking.enabled }}
+{{- /* The UIs with an Ingress. */}}
+{{- range $ui := list "grafana" "prometheus" }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-to-{{ $ui }}
+  namespace: {{ $observability.name }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- toYaml (get $.Values.networkPolicies $ui).podSelector | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $networking.name }}
+          podSelector:
+            matchLabels:
+              {{- toYaml $traefikSelector | nindent 14 }}
+---
+{{- end }}
+{{- end }}
+{{- range $backend := list "prometheus" "loki" "tempo" }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-grafana-and-alloy-to-{{ $backend }}
+  namespace: {{ $observability.name }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- toYaml (get $.Values.networkPolicies $backend).podSelector | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $grafanaSelector | nindent 14 }}
+        - podSelector:
+            matchLabels:
+              {{- toYaml $alloySelector | nindent 14 }}
+---
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: {{ $observability.name }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- toYaml $prometheusSelector | nindent 14 }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-otlp-to-alloy
+  namespace: {{ $observability.name }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- toYaml $alloySelector | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Apps in any namespace; policed namespaces also need an egress rule to Alloy.
+    - from:
+        - namespaceSelector: {}
+      ports:
+        {{- range .Values.networkPolicies.alloy.otlpPorts }}
+        - protocol: TCP
+          port: {{ . }}
+        {{- end }}
 {{- end }}
 {{- end }}

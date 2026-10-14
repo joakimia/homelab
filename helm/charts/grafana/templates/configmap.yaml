@@ -1,0 +1,10 @@
+{{- $_ := required "grafana.dashboardsConfigMaps.homelab is required" (index (.Values.grafana.dashboardsConfigMaps | default dict) "homelab") -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.grafana.dashboardsConfigMaps.homelab }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: grafana
+data:
+  {{- (.Files.Glob "dashboards/*.json").AsConfig | nindent 2 }}

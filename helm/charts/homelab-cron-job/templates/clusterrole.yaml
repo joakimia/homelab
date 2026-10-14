@@ -1,0 +1,14 @@
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "rbac settings are required" .Values.rbac -}}
+{{- if .Values.rbac.clusterRules }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  # Cluster-scoped, so the namespace keeps the name unique.
+  name: {{ .Values.namespace }}-{{ .Values.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+rules:
+  {{- toYaml .Values.rbac.clusterRules | nindent 2 }}
+{{- end }}

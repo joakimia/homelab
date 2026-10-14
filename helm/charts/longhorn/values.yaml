@@ -1,0 +1,39 @@
+host: longhorn.homelab.com
+
+ingress:
+  className: traefik
+  # Certificate for host from cert-manager (needs the cert-manager and cert-issuers charts).
+  tls:
+    enabled: true
+    clusterIssuer: homelab-ca
+  # Login through Authelia (Traefik ForwardAuth); the route is then HTTPS only. Without it, the
+  # UI is open to everyone who can reach Traefik: longhorn has no login of its own.
+  auth:
+    enabled: false
+    middleware: authelia@file
+  # The upstream UI Service.
+  backend:
+    service: longhorn-frontend
+    port: 80
+
+# Upstream chart values go under the dependency name.
+longhorn:
+  # The longhorn StorageClass is opt-in; homelab-pvc-storage stays the cluster's class.
+  persistence:
+    defaultClass: false
+    # One copy per volume while the cluster has one node; raise to 2-3 with more nodes.
+    defaultClassReplicaCount: 1
+    reclaimPolicy: Delete
+  defaultSettings:
+    defaultReplicaCount: 1
+  # One replica of each control component on a single node.
+  csi:
+    attacherReplicaCount: 1
+    provisionerReplicaCount: 1
+    resizerReplicaCount: 1
+    snapshotterReplicaCount: 1
+  longhornUI:
+    replicas: 1
+  # This chart's own Ingress (top-level ingress) publishes the UI instead.
+  ingress:
+    enabled: false

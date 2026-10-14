@@ -1,14 +1,20 @@
 # UTM MicroK8s development profile
 
-Deploys platform, cert-manager with the `homelab-ca` issuer, Traefik, PostgreSQL, PgBouncer, pgAdmin, the Caddy homepage, and Authelia to the MicroK8s VM in UTM. The order and Helm flags are in `deploy-set.json`, and the per-chart overrides are in `<chart>/values.yaml`. Every workload runs one replica.
+Deploys platform, cert-manager with the `homelab-ca` issuer, Traefik, PostgreSQL, PgBouncer, pgAdmin, the `homelab` chart (Caddy homepage and a daily cleanup job), Authelia, and the observability stack (Prometheus, Loki, Tempo, Alloy, Grafana) to the MicroK8s VM in UTM. The order and Helm flags are in `deploy-set.json`, and the per-chart overrides are in `<chart>/values.yaml`. Every workload runs one replica.
+
+Before deploying, on a VM provisioned earlier:
+
+- Give it 8 GiB of memory: the observability charts request about 1 GiB, with limits of about 4.3 GiB.
+- Run `sudo microk8s enable metrics-server` on the VM, for `kubectl top` and the CPU/MEM columns in k9s (newer seeds do this).
+- Remove the old `homepage` release if it exists (`helm uninstall homepage -n hlab-frontend-apps`); see the [homelab chart](../../../charts/homelab/README.md).
 
 ## Quick start
 
-Provision the VM first ([guide](../../../../infratructure/on-premises/debian12/README.md)), then run this from the repository root on the Mac:
+Provision the VM first ([guide](../../../../infratructure/on-premises/virtual-machine/debian12/README.md)), then run this from the repository root on the Mac:
 
 ```sh
 VM_IP=192.168.64.9      # in the VM console: ip -4 -o addr show dev enp0s1
-infratructure/on-premises/debian12/install.sh microk8s control-plane-node "debian@$VM_IP"
+infratructure/on-premises/virtual-machine/debian12/install.sh microk8s control-plane-node "debian@$VM_IP"
 helm/deployment/dev/local-microk8s-cluster-dev/install.sh "debian@$VM_IP"
 curl --cacert .local/homelab-ca/ca.crt --resolve "homepage.homelab.com:8443:$VM_IP" https://homepage.homelab.com:8443/
 ```
@@ -39,12 +45,26 @@ KUBECONFIG=.local/local-microk8s-cluster-dev.kubeconfig k9s
 | `hlab-database` | `postgres-admin` | `PASSWORD` | `postgres` install script; password of the `homelab-admin` role |
 | `hlab-frontend-apps` | `pgadmin-credentials` | `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD` | `pgadmin` install script |
 | `hlab-platform` | `authelia` | `JWT_SECRET`, `SESSION_SECRET`, `STORAGE_ENCRYPTION_KEY`, `users_database.yml` | `authelia` install script; prints the admin login once |
+| `hlab-observability` | `grafana-admin` | `admin-user`, `admin-password` | `grafana` install script; prints the admin login once |
 
-In pgAdmin, register PostgreSQL directly: `postgres.hlab-database.svc.cluster.local:5432`, database `homelab`, user `homelab-admin` (password printed by the first postgres install, or in the `postgres-admin` Secret). Apps use PgBouncer (`pgbouncer.hlab-database.svc.cluster.local:6432`). Read the password with:
+### Connect pgAdmin to PostgreSQL
+
+In pgAdmin: Servers → Register → Server. pgAdmin connects to PostgreSQL directly; apps use PgBouncer (`pgbouncer.hlab-database.svc.cluster.local:6432`).
+
+| Field | Value |
+|---|---|
+| Host | `postgres.hlab-database.svc.cluster.local` |
+| Port | `5432` |
+| Maintenance database | `homelab` |
+| Username | `homelab-admin` |
+
+Password, from the repository root on the Mac:
 
 ```sh
-kubectl get secret postgres-credentials -n hlab-database -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d; echo
+KUBECONFIG=.local/local-microk8s-cluster-dev.kubeconfig kubectl get secret postgres-admin -n hlab-database -o jsonpath='{.data.PASSWORD}' | base64 -d; echo
 ```
+
+The superuser `homelab` uses `POSTGRES_PASSWORD` from `postgres-credentials`.
 
 PostgreSQL uses the `homelab-pvc-storage` class. The platform chart creates it from this profile's overlay, with MicroK8s's `microk8s.io/hostpath` provisioner.
 
@@ -58,11 +78,11 @@ kubectl get certificate -A   # READY True; otherwise Traefik serves its self-sig
 
 ## Login
 
-The homepage and pgAdmin require an Authelia login (`https://auth.homelab.com:8443/`, user printed by the first install) and are HTTPS only. pgAdmin logs you in as the Authelia user.
+The homepage, pgAdmin, Grafana, and Prometheus require an Authelia login (`https://auth.homelab.com:8443/`, user printed by the first install) and are HTTPS only. pgAdmin and Grafana log you in as the Authelia user; in Grafana, the Authelia `admin` is the Grafana admin and other users are Viewers.
 
 ## Reach it from the Mac
 
-Traefik listens on host ports **8443** (HTTPS) and 8080 (HTTP); ports 443 and 80 are not used, so URLs include the port. An Ingress hostname does not create DNS. Either use `curl --resolve` as in the quick start, or add `/etc/hosts` entries for `homepage.homelab.com`, `pgadmin.homelab.com`, and `auth.homelab.com` pointing to the VM. 
+Traefik listens on host ports **8443** (HTTPS) and 8080 (HTTP); ports 443 and 80 are not used, so URLs include the port. An Ingress hostname does not create DNS. Either use `curl --resolve` as in the quick start, or add `/etc/hosts` entries for `homepage.homelab.com`, `pgadmin.homelab.com`, `grafana.homelab.com`, `prometheus.homelab.com`, and `auth.homelab.com` pointing to the VM. 
 
 UTM Shared Network uses DHCP on `192.168.64.0/24`, with gateway and DNS at `192.168.64.1`, so the VM address can change. Update `/etc/hosts` and rerun `deploy.sh --kubeconfig` when it does. For a fixed address, either:
 

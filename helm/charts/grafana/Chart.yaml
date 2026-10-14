@@ -1,0 +1,17 @@
+apiVersion: v2
+name: grafana
+description: Grafana (upstream grafana-community chart as a pinned dependency), dashboards for the homelab with Prometheus, Loki, and Tempo as data sources.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 13.2.4
+
+# The upstream chart is pulled from its OCI registry by scripts/install.sh (helm dependency build,
+# pinned by Chart.lock). The grafana/grafana chart is deprecated; it moved to grafana-community.
+# The Ingress is this chart's own template, so it follows the homelab ingress.tls/auth values.
+dependencies:
+  - name: grafana
+    version: 13.6.0
+    repository: oci://ghcr.io/grafana-community/helm-charts

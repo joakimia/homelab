@@ -1,0 +1,13 @@
+# Authelia in front and Grafana logging in the Remote-User.
+# expect: traefik.ingress.kubernetes.io/router.middlewares: authelia@file
+# expect: header_name = Remote-User
+# expect: whitelist = 10.1.0.0/16
+# expect: secretName: grafana-tls
+ingress:
+  auth:
+    enabled: true
+grafana:
+  grafana.ini:
+    auth.proxy:
+      enabled: true
+      whitelist: 10.1.0.0/16

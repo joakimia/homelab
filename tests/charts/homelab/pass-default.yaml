@@ -1,0 +1,8 @@
+# The profile default: homepage with the hostless rule, and the cleanup CronJob.
+# expect: name: homepage-static-assets
+# expect: <title>Homelab</title>
+# expect: Deletes Kubernetes leftovers
+# expect: name: periodic-cleanup
+# expect: schedule: "30 3 * * *"
+# expect: value: "homelab.jamundsen.local/tier"
+# expect: - http:

@@ -1,0 +1,4 @@
+# expect: kind: PersistentVolumeClaim
+# expect: name: homelab-shared
+homelab-shared-pvc:
+  enabled: true

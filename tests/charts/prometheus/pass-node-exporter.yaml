@@ -1,0 +1,4 @@
+# node-exporter in its privileged namespace, scraped through its Service annotation.
+# expect: namespace: hlab-observability-agents
+# expect: hostPID: true
+# expect: prometheus.io/scrape: "true"

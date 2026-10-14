@@ -1,0 +1,15 @@
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- if not .Values.scriptConfigMap }}
+{{- $_ := required "script or scriptConfigMap is required" .Values.script -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-script
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+data:
+  run.sh: |
+    {{- .Values.script | nindent 4 }}
+{{- end }}

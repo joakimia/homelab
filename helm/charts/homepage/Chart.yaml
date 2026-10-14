@@ -1,9 +1,0 @@
-apiVersion: v2
-name: homepage
-description: A simple homelab landing page served by Caddy.
-
-type: application
-
-version: 0.1.0
-
-appVersion: 2.11.6

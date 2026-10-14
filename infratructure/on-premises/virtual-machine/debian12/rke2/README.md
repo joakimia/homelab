@@ -4,7 +4,8 @@
 
 ## What the control-plane seed does
 
-- Updates Debian and installs `curl` and `jq`.
+- Updates Debian and installs `curl` and `jq`, plus `open-iscsi` and `nfs-common` for Longhorn.
+- Loads `iscsi_tcp` (now and at boot) and starts `iscsid`.
 - Turns swap off, now and in `/etc/fstab`.
 - Writes `/etc/rancher/rke2/config.yaml` with `ingress-controller: none`. Since v1.36, RKE2 deploys its own Traefik on ports 80/443. The homelab Traefik chart provides ingress on 8080/8443 instead.
 - Installs RKE2 as a server and starts `rke2-server`, then waits until the API answers.
@@ -12,7 +13,7 @@
 - Installs Helm and k9s.
 - Applies the [basic hardening](../README.md#basic-hardening-work-in-progress).
 
-The worker seed installs the RKE2 agent, Helm, and k9s, but does not join or start yet. Joining needs the server URL (`https://<control-plane-ip>:9345`) and the token from `/var/lib/rancher/rke2/server/node-token` in `/etc/rancher/rke2/config.yaml`. Keep the token out of Git.
+The worker seed installs the Longhorn prerequisites, the RKE2 agent, Helm, and k9s, but does not join or start yet. Joining needs the server URL (`https://<control-plane-ip>:9345`) and the token from `/var/lib/rancher/rke2/server/node-token` in `/etc/rancher/rke2/config.yaml`. Keep the token out of Git.
 
 ## Pinned versions
 
@@ -24,7 +25,7 @@ The worker seed installs the RKE2 agent, Helm, and k9s, but does not join or sta
 
 ## Provision
 
-From `infratructure/on-premises/debian12/`:
+From `infratructure/on-premises/virtual-machine/debian12/`:
 
 ```sh
 ./install.sh rke2 control-plane-node debian@<ip>
@@ -34,7 +35,7 @@ Then check on the node: `cloud-init status --long`, `sudo systemctl status rke2-
 
 ## Not done yet
 
-- **Storage:** RKE2 has no default StorageClass. The [RKE2 Helm profile](../../../../helm/deployment/dev/homelab-rke2-cluster-dev/README.md) deploys local-path-provisioner behind `homelab-pvc-storage` (single node only); Longhorn is an option for several nodes.
+- **Storage:** RKE2 has no default StorageClass. The [RKE2 Helm profile](../../../../../helm/deployment/dev/homelab-rke2-cluster-dev/README.md) deploys local-path-provisioner behind `homelab-pvc-storage` (single node only); the [Longhorn chart](../../../../../helm/charts/longhorn/README.md) (work in progress) adds replicated volumes for several nodes.
 - **Joining nodes:** the worker seed does not join the control plane yet.
 - **LAN networking and DNS:** not defined yet.
 - **Helm profile:** `helm/deployment/dev/homelab-rke2-cluster-dev` exists but has not been deployed yet.

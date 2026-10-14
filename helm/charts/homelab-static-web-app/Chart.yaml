@@ -1,0 +1,9 @@
+apiVersion: v2
+name: homelab-static-web-app
+description: Base chart for a static website served by Caddy behind Traefik. The homelab chart uses it for the homepage.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 2.11.6

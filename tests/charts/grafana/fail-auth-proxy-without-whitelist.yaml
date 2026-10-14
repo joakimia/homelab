@@ -1,0 +1,8 @@
+# expect: grafana.grafana.ini.auth.proxy.whitelist is required
+ingress:
+  auth:
+    enabled: true
+grafana:
+  grafana.ini:
+    auth.proxy:
+      enabled: true

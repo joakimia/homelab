@@ -1,0 +1,3 @@
+# expect: host: "longhorn.homelab.com"
+# expect: name: longhorn-frontend
+# expect: secretName: longhorn-frontend-tls

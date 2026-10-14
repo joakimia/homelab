@@ -9,7 +9,7 @@ Use this skill when you provision a fresh Debian machine, change a cloud-init se
 
 ## Workflow
 
-1. Read `AGENTS.md`, `infratructure/on-premises/debian12/README.md`, and the README for the seed (`microk8s/`, `rke2/`, or `jumpbox/`) first.
+1. Read `AGENTS.md`, `infratructure/on-premises/virtual-machine/debian12/README.md`, and the README for the seed (`microk8s/`, `rke2/`, or `jumpbox/`) first.
 2. Confirm the target address, the Debian user (`debian`, with sudo; the installer's root password left empty), and which seed is being provisioned. Never assume an earlier machine or package installation still exists.
 3. A minimal Debian install may not include cloud-init. Use these commands:
    - `debian12/install.sh <microk8s|rke2> <role> debian@<ip>` or `install.sh jumpbox debian@<ip>` installs cloud-init over SSH, stages the seed, and runs it.

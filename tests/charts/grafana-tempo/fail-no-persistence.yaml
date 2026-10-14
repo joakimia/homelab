@@ -1,0 +1,4 @@
+# expect: /tempo/persistence/enabled
+tempo:
+  persistence:
+    enabled: false

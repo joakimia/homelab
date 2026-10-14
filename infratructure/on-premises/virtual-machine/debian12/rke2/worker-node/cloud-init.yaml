@@ -14,12 +14,19 @@ packages:
   - curl
   - jq
   - unattended-upgrades
+  # Longhorn: iSCSI for its block devices, NFS for ReadWriteMany volumes.
+  - open-iscsi
+  - nfs-common
 
 # Work in progress: the agent is installed but not joined or started. Joining needs the
 # server URL (https://<control-plane-ip>:9345) and the token from
 # /var/lib/rancher/rke2/server/node-token on the control plane in
 # /etc/rancher/rke2/config.yaml; keep the token out of Git.
 write_files:
+  # Longhorn attaches volumes over iSCSI; load the module at every boot.
+  - path: /etc/modules-load.d/longhorn.conf
+    content: |
+      iscsi_tcp
   - path: /etc/profile.d/rke2.sh
     content: |
       export PATH="$PATH:/var/lib/rancher/rke2/bin"
@@ -31,7 +38,13 @@ runcmd:
   - [sed, -i, '/[[:space:]]swap[[:space:]]/ s/^[^#]/#&/', /etc/fstab]
 
 
-  # Step 2: Install RKE2
+  # Step 2: Prepare the node for Longhorn
+  # Load iscsi_tcp now (modules-load.d covers reboots) and run the iSCSI daemon.
+  - [modprobe, iscsi_tcp]
+  - [systemctl, enable, --now, iscsid]
+
+
+  # Step 3: Install RKE2
   # Pinned versions. RKE2 comes from its versioned installer (checked here), which verifies the
   # release tarball itself; Helm and k9s are exact releases checked against the SHA-256 recorded
   # here. To upgrade, change the version and checksums from the release pages.
@@ -52,7 +65,7 @@ runcmd:
     rm -f /tmp/rke2-install.sh
 
 
-  # Step 3: Install Helm and k9s
+  # Step 4: Install Helm and k9s
   - |
     set -e
     # Set versions and architecture-specific checksums
@@ -85,7 +98,7 @@ runcmd:
     rm -rf "$tmp"
 
 
-  # Step 4: Basic hardening (work in progress: SSH and security updates only)
+  # Step 5: Basic hardening (work in progress: SSH and security updates only)
   - |
     set -e
     # SSH: no root login, few attempts per connection, no X11 forwarding. Files in
@@ -112,6 +125,6 @@ runcmd:
     printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' > /etc/apt/apt.conf.d/20auto-upgrades
 
 
-  # Step 5: Print the effective hardening settings to /var/log/cloud-init-output.log
+  # Step 6: Print the effective hardening settings to /var/log/cloud-init-output.log
   - [sh, -c, 'sshd -T | grep -E "^(permitrootlogin|maxauthtries|x11forwarding|passwordauthentication|kbdinteractiveauthentication) "']
   - [sh, -c, 'apt-config dump | grep -E "^(APT::Periodic::Unattended-Upgrade|Unattended-Upgrade::Automatic-Reboot|Unattended-Upgrade::Origins-Pattern::) "']

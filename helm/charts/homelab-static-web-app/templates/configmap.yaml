@@ -1,0 +1,35 @@
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "service settings are required" .Values.service -}}
+{{- $_ := required "service.containerPort is required" .Values.service.containerPort -}}
+{{- if not .Values.filesConfigMap }}
+{{- $_ := required "files or filesConfigMap is required" .Values.files -}}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-caddyfile
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+data:
+  Caddyfile: |
+    :{{ .Values.service.containerPort }} {
+      root * /usr/share/caddy
+      file_server
+    }
+{{- if not .Values.filesConfigMap }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-files
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+data:
+  {{- range $file, $content := .Values.files }}
+  {{ $file }}: |
+    {{- $content | nindent 4 }}
+  {{- end }}
+{{- end }}

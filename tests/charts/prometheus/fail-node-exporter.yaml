@@ -1,0 +1,4 @@
+# expect: /prometheus/prometheus-node-exporter/namespaceOverride
+prometheus:
+  prometheus-node-exporter:
+    namespaceOverride: hlab-observability

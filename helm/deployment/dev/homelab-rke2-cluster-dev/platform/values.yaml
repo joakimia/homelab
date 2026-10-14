@@ -7,6 +7,9 @@
 namespaces:
   storage:
     enabled: true
+  # Shared files on Longhorn (the homelab chart's homelab-shared-pvc).
+  filestore:
+    enabled: true
 
 storageClass:
   enabled: true

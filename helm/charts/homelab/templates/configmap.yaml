@@ -1,0 +1,30 @@
+{{- $homepage := required "homelab-frontend settings are required" (index .Values "homelab-frontend") -}}
+{{- $_ := required "homelab-frontend.namespace is required" $homepage.namespace -}}
+{{- $_ := required "homelab-frontend.filesConfigMap is required" $homepage.filesConfigMap -}}
+{{- $cleanup := required "homelab-periodic-cleanup settings are required" (index .Values "homelab-periodic-cleanup") -}}
+{{- if $cleanup.enabled -}}
+{{- $_ := required "homelab-periodic-cleanup.namespace is required" $cleanup.namespace -}}
+{{- $_ := required "homelab-periodic-cleanup.scriptConfigMap is required" $cleanup.scriptConfigMap -}}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $homepage.filesConfigMap }}
+  namespace: {{ $homepage.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $homepage.name }}
+data:
+  {{- (.Files.Glob "static-assets/*").AsConfig | nindent 2 }}
+{{- if $cleanup.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $cleanup.scriptConfigMap }}
+  namespace: {{ $cleanup.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ $cleanup.name }}
+data:
+  run.sh: |
+    {{- .Files.Get "scripts/periodic-cleanup.sh" | nindent 4 }}
+{{- end }}

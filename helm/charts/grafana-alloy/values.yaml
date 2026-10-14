@@ -1,0 +1,73 @@
+# Name of the ConfigMap with config/config.alloy; alloy.alloy.configMap.name must match.
+configMapName: alloy-config
+
+# Where config/config.alloy sends data. Services in the same namespace.
+endpoints:
+  # Loki push API: pod logs and Kubernetes events, with their labels as stream labels.
+  lokiPush: http://loki:3100/loki/api/v1/push
+  # Loki OTLP endpoint: logs apps send over OTLP.
+  lokiOtlp: http://loki:3100/otlp
+  # Tempo's OTLP gRPC receiver.
+  tempo: tempo:4317
+  # Prometheus OTLP receiver (needs --web.enable-otlp-receiver).
+  prometheus: http://prometheus-server/api/v1/otlp
+
+# Upstream chart values go under the dependency name.
+alloy:
+  # Service and pod names: alloy. Apps send OTLP to alloy.hlab-observability:4317 (gRPC) or :4318 (HTTP).
+  fullnameOverride: alloy
+  # Pod logs are read through the Kubernetes API, so one replica covers every node and no
+  # hostPath is needed (hlab-observability is baseline). Keep one: more would ship events twice.
+  controller:
+    type: deployment
+    replicas: 1
+    volumes:
+      extra:
+        - name: storage
+          emptyDir: {}
+  # The PodLogs CRD is not used.
+  crds:
+    create: false
+  alloy:
+    configMap:
+      create: false
+      name: alloy-config
+      key: config.alloy
+    enableReporting: false
+    # The root filesystem is read-only; Alloy keeps its state (log positions, WAL) here.
+    mounts:
+      extra:
+        - name: storage
+          mountPath: /tmp/alloy
+    extraPorts:
+      - name: otlp-grpc
+        port: 4317
+        targetPort: 4317
+        protocol: TCP
+      - name: otlp-http
+        port: 4318
+        targetPort: 4318
+        protocol: TCP
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 512Mi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 473
+      runAsGroup: 473
+      seccompProfile:
+        type: RuntimeDefault
+  configReloader:
+    resources:
+      requests:
+        cpu: 5m
+        memory: 16Mi
+      limits:
+        memory: 64Mi

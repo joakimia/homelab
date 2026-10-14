@@ -1,0 +1,2 @@
+# expect: alloy.alloy.configMap.name must equal configMapName
+configMapName: other-config

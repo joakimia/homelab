@@ -1,0 +1,26 @@
+# Upstream chart values go under the dependency name.
+tempo:
+  # Service and pod names: tempo (Alloy sends OTLP to tempo:4317, Grafana queries tempo:3200).
+  fullnameOverride: tempo
+  replicas: 1
+  tempo:
+    reportingEnabled: false
+    # Short retention for a small node.
+    retention: 72h
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1Gi
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+  persistence:
+    enabled: true
+    storageClassName: homelab-pvc-storage
+    size: 3Gi

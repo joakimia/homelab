@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "configMapName",
+    "endpoints",
+    "alloy"
+  ],
+  "properties": {
+    "configMapName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "endpoints": {
+      "type": "object",
+      "required": [
+        "lokiPush",
+        "lokiOtlp",
+        "tempo",
+        "prometheus"
+      ],
+      "properties": {
+        "lokiPush": {
+          "type": "string",
+          "pattern": "^https?://"
+        },
+        "lokiOtlp": {
+          "type": "string",
+          "pattern": "^https?://"
+        },
+        "tempo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prometheus": {
+          "type": "string",
+          "pattern": "^https?://"
+        }
+      },
+      "additionalProperties": false
+    },
+    "alloy": {
+      "type": "object",
+      "required": [
+        "fullnameOverride",
+        "alloy"
+      ],
+      "properties": {
+        "fullnameOverride": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alloy": {
+          "type": "object",
+          "required": [
+            "configMap"
+          ],
+          "properties": {
+            "configMap": {
+              "type": "object",
+              "required": [
+                "create",
+                "name",
+                "key"
+              ],
+              "properties": {
+                "create": {
+                  "const": false
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "key": {
+                  "const": "config.alloy"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "global": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

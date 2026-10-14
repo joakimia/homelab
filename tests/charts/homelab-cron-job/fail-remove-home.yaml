@@ -1,0 +1,10 @@
+# kubectl and other tools need a writable HOME on the read-only root.
+# expect: /defaultEnv
+name: hello
+image:
+  repository: alpine
+  tag: "3.24"
+schedule: 0 * * * *
+script: echo hello
+defaultEnv:
+  HOME: null

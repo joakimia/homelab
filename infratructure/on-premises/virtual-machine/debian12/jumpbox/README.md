@@ -14,7 +14,7 @@ The jumpbox is the entry point to the cluster network. You reach it first, and f
 
 ## Provision it
 
-From `infratructure/on-premises/debian12/` on the Mac:
+From `infratructure/on-premises/virtual-machine/debian12/` on the Mac:
 
 ```sh
 ./install.sh jumpbox debian@<jumpbox-ip>          # hostname homelab-jumpbox
@@ -26,7 +26,7 @@ After cloud-init has run, `install.sh` copies the **bundle** to `~/homelab-bundl
 
 ```sh
 ssh debian@<jumpbox-ip>
-cd ~/homelab-bundle/infratructure/on-premises/debian12
+cd ~/homelab-bundle/infratructure/on-premises/virtual-machine/debian12
 ./install.sh rke2 control-plane-node debian@<node-ip>                       # provision a node
 ~/homelab-bundle/helm/deployment/dev/local-microk8s-cluster-dev/deploy.sh debian@<node-ip>   # deploy charts
 ```

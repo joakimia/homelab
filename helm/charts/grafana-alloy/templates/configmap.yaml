@@ -1,0 +1,19 @@
+{{- $_ := required "configMapName is required" .Values.configMapName -}}
+{{- $_ := required "endpoints settings are required" .Values.endpoints -}}
+{{- $_ := required "endpoints.lokiPush is required" .Values.endpoints.lokiPush -}}
+{{- $_ := required "endpoints.lokiOtlp is required" .Values.endpoints.lokiOtlp -}}
+{{- $_ := required "endpoints.tempo is required" .Values.endpoints.tempo -}}
+{{- $_ := required "endpoints.prometheus is required" .Values.endpoints.prometheus -}}
+{{- if ne .Values.configMapName .Values.alloy.alloy.configMap.name }}
+{{- fail "alloy.alloy.configMap.name must equal configMapName" -}}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMapName }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: alloy
+data:
+  config.alloy: |
+    {{- tpl (.Files.Get "config/config.alloy") . | nindent 4 }}

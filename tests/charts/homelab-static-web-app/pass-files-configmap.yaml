@@ -1,0 +1,5 @@
+# Files from a ConfigMap another chart creates: no files ConfigMap here.
+# expect: name: site-static-assets
+name: site
+host: site.homelab.com
+filesConfigMap: site-static-assets

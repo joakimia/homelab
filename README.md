@@ -9,7 +9,7 @@ The current development environment is a Debian 12 virtual machine in UTM runnin
 Provision a Debian 12 VM in UTM with cloud-init, then deploy the development Helm profile and reach it through Traefik:
 
 ```sh
-infratructure/on-premises/debian12/install.sh microk8s control-plane-node debian@<vm-ip>
+infratructure/on-premises/virtual-machine/debian12/install.sh microk8s control-plane-node debian@<vm-ip>
 helm/deployment/dev/local-microk8s-cluster-dev/install.sh debian@<vm-ip>
 ```
 
@@ -17,7 +17,7 @@ The UTM profile is the first working target. RKE2 seeds, the jumpbox, and many c
 
 ## Where things live
 
-- `infratructure/on-premises/debian12/`: the shared `install.sh` and cloud-init seeds for MicroK8s, RKE2, and the jumpbox. [README](infratructure/on-premises/debian12/README.md)
+- `infratructure/on-premises/virtual-machine/debian12/`: the shared `install.sh` and cloud-init seeds for MicroK8s, RKE2, and the jumpbox. [README](infratructure/on-premises/virtual-machine/debian12/README.md)
 - `helm/charts/`: individual Helm charts. [README](helm/charts/README.md)
 - `helm/deployment/`: cluster profiles that choose and deploy charts. [README](helm/README.md)
 - `docs/`: architecture notes, user guides, and runbooks.

@@ -1,0 +1,8 @@
+# Without rules, no token is mounted.
+# expect: automountServiceAccountToken: false
+name: hello
+image:
+  repository: alpine
+  tag: "3.24"
+schedule: 0 * * * *
+script: echo hello

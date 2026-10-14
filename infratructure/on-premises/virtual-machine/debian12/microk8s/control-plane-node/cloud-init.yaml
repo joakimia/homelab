@@ -70,6 +70,8 @@ runcmd:
   - [usermod, -aG, microk8s, debian]
   - [/snap/bin/microk8s, status, --wait-ready]
   - [/snap/bin/microk8s, enable, hostpath-storage]
+  # Metrics API for kubectl top, k9s CPU/MEM columns, and HorizontalPodAutoscalers.
+  - [/snap/bin/microk8s, enable, metrics-server]
 
 
   # Step 5: Write the debian user's kubeconfig

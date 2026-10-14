@@ -10,7 +10,12 @@
     { "chart": "postgres" },
     { "chart": "pgbouncer" },
     { "chart": "pgadmin" },
-    { "chart": "homepage" },
-    { "chart": "authelia" }
+    { "chart": "homelab" },
+    { "chart": "authelia" },
+    { "chart": "prometheus" },
+    { "chart": "grafana-loki" },
+    { "chart": "grafana-tempo" },
+    { "chart": "grafana-alloy" },
+    { "chart": "grafana" }
   ]
 }

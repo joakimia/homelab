@@ -1,0 +1,8 @@
+# The script from a ConfigMap another chart creates.
+# expect: name: hello-from-parent
+name: hello
+image:
+  repository: alpine
+  tag: "3.24"
+schedule: 0 * * * *
+scriptConfigMap: hello-from-parent

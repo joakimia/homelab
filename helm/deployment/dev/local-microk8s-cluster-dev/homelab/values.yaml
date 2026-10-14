@@ -1,0 +1,10 @@
+# Optional environment specific override values for the local MicroK8s cluster goes here
+# If no override values are needed, this file can be left empty.
+# It must be defined however, if you want to deploy the chart in this environment.
+
+# Homepage behind the Authelia login; the hostless rule cannot work with it.
+homelab-frontend:
+  ingress:
+    catchAll: false
+    auth:
+      enabled: true

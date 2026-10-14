@@ -1,0 +1,10 @@
+# Optional environment specific override values for the homelab RKE2 cluster goes here
+# If no override values are needed, this file can be left empty.
+# It must be defined however, if you want to deploy the chart in this environment.
+
+# Shared files on Longhorn: ReadWriteMany, so pods on any node can mount the claim (Longhorn
+# serves it over NFS from a share-manager pod in hlab-storage; nodes need nfs-common).
+homelab-shared-pvc:
+  enabled: true
+  storageClassName: longhorn
+  accessModes: [ReadWriteMany]

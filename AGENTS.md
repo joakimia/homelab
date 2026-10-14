@@ -10,16 +10,18 @@ The current UTM cluster runs MicroK8s and uses the profile `helm/deployment/dev/
 
 UTM's `192.168.64.x` network and its address/DNS notes apply only to that VM. Do not carry them into the RKE2-on-hardware setup; define addressing, DNS, and routing for the home LAN there.
 
-The current stack is platform namespaces and policies, cert-manager with the `cert-issuers` chart, Traefik, PostgreSQL, PgBouncer, pgAdmin, and a Caddy homepage. Ingress serves HTTPS on host port 8443 and HTTP on 8080. Certificates come from the `homelab-ca` ClusterIssuer, backed by a name-constrained local CA in `.local/homelab-ca/` that the Mac trusts once. An Ingress hostname does not create DNS: clients need a DNS record or hosts entry.
+The current stack is platform namespaces and policies, cert-manager with the `cert-issuers` chart, Traefik, PostgreSQL, PgBouncer, pgAdmin, Authelia, the `homelab` chart (Caddy homepage and a daily cleanup job), and the observability stack (Prometheus, Loki, Tempo, Alloy, Grafana; first deployed 2026-10-14, not yet verified end to end). Ingress serves HTTPS on host port 8443 and HTTP on 8080. Certificates come from the `homelab-ca` ClusterIssuer, backed by a name-constrained local CA in `.local/homelab-ca/` that the Mac trusts once. An Ingress hostname does not create DNS: clients need a DNS record or hosts entry.
 
 ## Working rules
 
 - Preserve the user's existing changes. Do not revert, overwrite, or delete unrelated work. The user often edits files while you work; build on their version.
-- Do not commit or push unless the user asks.
+- Do not commit, push, or stage changes unless the user asks.
 - Do not add passwords, tokens, kubeconfig files, or other secrets to Git. Create secrets during installation or keep them in local, ignored files (`.local/`).
 - Distinguish implemented charts, seeds, and profiles from scaffolds and work in progress.
 - Keep documentation and comments short. People read them: write what is worth knowing in general (what it does, why, what to watch out for), not details found while debugging one case. Comment only what the code does not say itself. Mark incomplete content as work in progress and update it as the setup is verified.
-- Run `tests/check.sh` after changes; CI (`.github/workflows/ci.yml`) runs the same script. It covers `bash -n`, shellcheck, cloud-init YAML and `dash -n` on `runcmd` blocks, `helm lint`/`helm template` with profile overlays, chart cases (`tests/charts/<chart>/pass-*.yaml` and `fail-*.yaml`), `.editorconfig` formatting, and usage exits. Keep CI workflow files minimal: they install tools and call repository scripts. New checks go into `check.sh`. Update the tests in the same change as the code: a new chart rule or failure message gets a `fail-*` case, a new value or feature a `pass-*` case with `# expect:` lines, and a new script or mode is covered by `check.sh`. Do not run tests or provision/deploy against a VM or cluster unless the user asks; report exactly what was run.
+- Run `tests/check.sh` after changes; CI (`.github/workflows/ci.yml`) runs the same script. It covers `bash -n`, shellcheck, cloud-init YAML and `dash -n` on `runcmd` blocks, `helm lint`/`helm template` with profile overlays, chart cases (`tests/charts/<chart>/pass-*.yaml` and `fail-*.yaml`), `.editorconfig` formatting and Markdown links, and usage exits. Keep CI workflow files minimal: they install tools and call repository scripts. New checks go into `check.sh`. Update the tests in the same change as the code: a new chart rule or failure message gets a `fail-*` case, a new value or feature a `pass-*` case with `# expect:` lines, and a new script or mode is covered by `check.sh`. Do not run tests or provision/deploy against a VM or cluster unless the user asks; report exactly what was run.
+- **Test under the conditions where it runs.** Where an image's behavior matters (non-root, read-only root, auth headers), run it with Docker (`--user`, `--read-only`, `--cap-drop ALL`). Test scripts for pods in their image, with a stub for tools that need a cluster. Fetch chart dependencies with an empty Helm repository config, as on the node and in CI. `# expect:` lines only check that text appears; parse the output when the structure matters.
+- **When a bug gets past the checks, add a check that catches it.** Fix the cause, add a case or a `check.sh` rule, and confirm that it fails without the fix.
 - For cloud-init changes, follow the real flow from a clean Debian install. Do not assume packages or tools are already present.
 - Other profiles are separate targets and must not be deployed automatically.
 - Keep the Mac's default kubeconfig intact. `deploy.sh` writes a separate, ignored `.local/<cluster>.kubeconfig` whose context is the cluster name; use it explicitly for checks and k9s.
@@ -28,22 +30,22 @@ The current stack is platform namespaces and policies, cert-manager with the `ce
 
 ## Conventions
 
-- **Few entry points.** Provisioning has one script, `infratructure/on-premises/debian12/install.sh`. Each Helm profile has `install.sh` (over SSH: bundle, copy, deploy on the node) and `deploy.sh` (remote from the Mac, or `--local`). Put new logic into these instead of adding helper scripts; follow the `shell-scripts` skill for structure (usage header, `usage()`, validators, one function per step, dispatch at the bottom).
+- **Few entry points.** Provisioning has one script, `infratructure/on-premises/virtual-machine/debian12/install.sh`. Each Helm profile has `install.sh` (over SSH: bundle, copy, deploy on the node) and `deploy.sh` (remote from the Mac, or `--local`). Put new logic into these instead of adding helper scripts; follow the `shell-scripts` skill for structure (usage header, `usage()`, validators, one function per step, dispatch at the bottom).
 - **Portable host scripts.** Scripts run on the Mac must also work on Linux: bash 3.2 compatible (guard empty arrays under `set -u`), detect tools instead of assuming them (for example `hdiutil` or `xorriso`, BSD or GNU tar), and no `sed -i ''`.
 - **Outputs go where the script is run.** Generated files such as seed ISOs and `.local/<cluster>.kubeconfig` are written under the caller's current directory unless a path is given. `*.iso` and `.local/` are ignored by Git.
 - **Pinned versions.** Seeds pin MicroK8s and kubectl to a snap track, and Helm, k9s, kubectl, and the RKE2 installer to exact releases with a SHA-256 per architecture. Update the version tables in the READMEs with them.
-- **Unprivileged ports.** No port 80: Traefik uses 8080/8443, apps listen on 8080, and pgAdmin on 5050. Do not add `NET_BIND_SERVICE` for ports; add it only when the image binary carries it as a file capability (the caddy image does, see the homepage chart).
+- **Unprivileged ports.** Containers never listen on ports below 1024: Traefik uses 8080/8443, apps listen on 8080, and pgAdmin on 5050. Which port clients use (the node's `hostPort`, now 8080/8443, or a LoadBalancer on 443) is a profile choice and needs no privileges. Do not add `NET_BIND_SERVICE` for ports; add it only when the image binary carries it as a file capability (the caddy image does, see the `homelab-static-web-app` chart).
 - **SSH access.** The seed authorizes the provisioning machine's public key, so only the first `install.sh` run asks for a password. The jumpbox has its own key for the nodes it provisions.
 - **Profile folder = cluster name.** The folder name in `helm/deployment/<env>/<cluster>/` is the cluster the profile deploys to. The profile scripts read it from the folder and use it for the kubeconfig file and context and the bundle directory on the node; do not hard-code it.
-- **Charts and profiles.** Follow the `kubernetes-helm` skill: one template file per resource, `required` checks with `$_` and full value paths, all defaults in the chart's `values.yaml` and `values.schema.json`, Secrets created by the chart's `scripts/install.sh`, and profile order and flags in `deploy-set.json`.
+- **Charts and profiles.** Follow the `kubernetes-helm` skill: one template file per resource, `required` checks with `$_` and full value paths, all defaults in the chart's `values.yaml` and `values.schema.json`, Secrets created by the chart's `scripts/install.sh`, and profile order and flags in `deploy-set.json`. Upstream software is wrapped as a pinned dependency; the homelab's own apps are aliases of the `homelab-*` base charts in the `homelab` chart.
 - **Chart defaults first, overlays for overrides.** Put every value that can be shared in the chart's `values.yaml`. Profile overlays hold only what must differ between clusters (for example MicroK8s and RKE2). A value with no sensible default is `""  # required` in the chart, with a `required` check in the template, so each profile must set it.
 - **Quote YAML only when needed:** `{{ }}` templates, a leading `*`, `&`, `!`, or `%`, and strings YAML would read as numbers or booleans where a string is required (a version like `9.10` becomes `9.1`).
 - **Helm 4 on the Mac.** Use `--rollback-on-failure` (Helm 3's `--atomic`); the profile `deploy.sh` translates it for Helm 3.
 
 ## Repository layout
 
-- `infratructure/on-premises/debian12/` — shared `install.sh` and cloud-init seeds: `microk8s/` (current), `rke2/` and `jumpbox/` (work in progress).
-- `helm/charts/` — every chart the homelab can use; some are scaffolds.
+- `infratructure/on-premises/virtual-machine/debian12/` — shared `install.sh` and cloud-init seeds: `microk8s/` (current), `rke2/` and `jumpbox/` (work in progress).
+- `helm/charts/` — every chart the homelab can use: upstream wrappers, own charts, the `homelab-*` base charts with the `homelab` chart that uses them, and scaffolds.
 - `helm/deployment/<env>/<cluster>/` — cluster profiles that choose and deploy charts.
 - `docs/` — architecture notes, user guides, and runbooks.
 - `tests/` — `check.sh` (static checks, also run by CI) and placeholder folders for later VM/cluster tests.

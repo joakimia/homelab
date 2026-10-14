@@ -7,15 +7,17 @@
 #   ./check.sh seeds       Parse each cloud-init.yaml, require #cloud-config, and run
 #                          dash -n on every runcmd script block (cloud-init runs them with sh).
 #   ./check.sh charts      helm lint and helm template for each chart in each deploy-set.json,
-#                          with the profile's values overlay; JSON files must parse.
+#                          with the profile's values overlay; JSON files must parse, and no
+#                          "---" separator may be glued to the end of a line.
 #                          Fetches chart dependencies (needs network).
 #   ./check.sh cases       helm template with each tests/charts/<chart>/{pass,fail}-*.yaml overlay:
 #                          pass-* must render and contain each "# expect:" text, fail-* must
-#                          fail with it.
+#                          fail with it. Fetches chart dependencies (needs network).
 #                          Shared _helpers.tpl files must be identical.
 #   ./check.sh format      .editorconfig basics on files in Git: final newline, no tabs, and no
-#                          trailing whitespace (Markdown excepted).
-#   ./check.sh usage       Entry-point scripts exit 2 and print usage without arguments.
+#                          trailing whitespace (Markdown excepted); relative Markdown links resolve.
+#   ./check.sh usage       Entry-point scripts and the base chart installers exit 2 and print
+#                          usage without arguments.
 #
 # Needs bash, jq, helm, dash, and ruby or python3 with PyYAML. shellcheck is optional
 # locally (a notice is printed) and required when CI=true.
@@ -57,6 +59,23 @@ for c in d.get("runcmd") or []:
     if isinstance(c, str):
         sys.stdout.write(c + "\0")' "$1"
   fi
+}
+
+# Prints lines where a template trimmed the newline before a "---" document separator
+# (for example "</html>---"): Helm then reads two resources as one and drops the first.
+glued_separators() {
+  grep -nE '[^[:space:]-]---[[:space:]]*$' || true
+}
+
+# Registers the HTTPS chart repositories a chart depends on, which helm dependency build needs
+# (OCI repositories need nothing). The name is the host, for example charts-longhorn-io.
+add_chart_repos() {
+  local url
+  while IFS= read -r url; do
+    helm repo list 2>/dev/null | grep -q "$url" && continue
+    helm repo add "$(printf '%s' "$url" | sed -E 's#^https://##; s#[^a-z0-9]+#-#g; s#-+$##')" "$url" >/dev/null \
+      || fail "helm repo add $url"
+  done < <(sed -nE 's#^[[:space:]]*repository:[[:space:]]*(https://[^[:space:]]+).*#\1#p' "$1/Chart.yaml")
 }
 
 check_scripts() {
@@ -103,7 +122,7 @@ check_seeds() {
 }
 
 check_charts() {
-  local file deploy_set profile_dir chart overlay args
+  local file deploy_set profile_dir chart overlay args output glued
   echo "==> charts"
   require helm
   require jq
@@ -119,6 +138,7 @@ check_charts() {
         continue
       fi
       if grep -q '^dependencies:' "$repo_root/helm/charts/$chart/Chart.yaml"; then
+        add_chart_repos "$repo_root/helm/charts/$chart"
         helm dependency build "$repo_root/helm/charts/$chart" >/dev/null \
           || { fail "helm dependency build $chart"; continue; }
       fi
@@ -130,8 +150,12 @@ check_charts() {
       fi
       helm lint --quiet "$repo_root/helm/charts/$chart" ${args[@]+"${args[@]}"} >/dev/null \
         || fail "helm lint $chart (${profile_dir#"$repo_root"/})"
-      helm template "$chart" "$repo_root/helm/charts/$chart" ${args[@]+"${args[@]}"} >/dev/null \
-        || fail "helm template $chart (${profile_dir#"$repo_root"/})"
+      if output="$(helm template "$chart" "$repo_root/helm/charts/$chart" ${args[@]+"${args[@]}"})"; then
+        glued="$(printf '%s\n' "$output" | glued_separators)"
+        [[ -z "$glued" ]] || fail "helm template $chart (${profile_dir#"$repo_root"/}): document separator glued to a line: $glued"
+      else
+        fail "helm template $chart (${profile_dir#"$repo_root"/})"
+      fi
       echo "ok $chart with ${profile_dir#"$repo_root"/}"
     done < <(jq -r '.releases[].chart' "$deploy_set")
   done < <(repo_files 'deploy-set.json')
@@ -140,11 +164,16 @@ check_charts() {
 # Renders each chart with its test overlays and checks the outcome. "# expect: <text>" lines
 # name text the output must contain (pass-*) or the error must contain (fail-*).
 check_cases() {
-  local case_file chart expect output status count=0 helper first=''
+  local case_file chart expect output status count=0 helper first='' built=' ' glued
   echo "==> cases"
   require helm
   while IFS= read -r case_file; do
     chart="$(basename "$(dirname "$case_file")")"
+    if [[ "$built" != *" $chart "* ]] && grep -q '^dependencies:' "$repo_root/helm/charts/$chart/Chart.yaml"; then
+      add_chart_repos "$repo_root/helm/charts/$chart"
+      helm dependency build "$repo_root/helm/charts/$chart" >/dev/null || fail "helm dependency build $chart"
+      built="$built$chart "
+    fi
     output="$(helm template "$chart" "$repo_root/helm/charts/$chart" --values "$case_file" 2>&1)" && status=0 || status=$?
     count=$((count + 1))
     case "$(basename "$case_file")" in
@@ -156,6 +185,8 @@ check_cases() {
         while IFS= read -r expect; do
           [[ "$output" == *"$expect"* ]] || fail "${case_file#"$repo_root"/}: output lacks: $expect"
         done < <(sed -n 's/^# expect: //p' "$case_file")
+        glued="$(printf '%s\n' "$output" | glued_separators)"
+        [[ -z "$glued" ]] || fail "${case_file#"$repo_root"/}: document separator glued to a line: $glued"
         ;;
       fail-*)
         expect="$(sed -n 's/^# expect: //p' "$case_file" | head -n 1)"
@@ -197,6 +228,18 @@ check_format() {
     [[ "$file" == *.md ]] || ! grep -qE '[[:space:]]+$' "$repo_root/$file" || fail "$file: trailing whitespace"
   done < <(git -C "$repo_root" ls-files --cached --others --exclude-standard)
   [[ "$failures" -gt "$before" ]] || echo "ok formatting"
+
+  # Relative Markdown links must point at a file or folder (catches moved folders).
+  before=$failures
+  while IFS= read -r file; do
+    [[ -f "$repo_root/$file" ]] || continue
+    while IFS= read -r target; do
+      target="${target%%#*}"
+      [[ -z "$target" || "$target" == *://* || "$target" == mailto:* ]] && continue
+      [[ -e "$(dirname "$repo_root/$file")/$target" ]] || fail "$file: broken link $target"
+    done < <(grep -oE '\]\([^)[:space:]]+\)' "$repo_root/$file" | sed -E 's/^\]\(//; s/\)$//')
+  done < <(git -C "$repo_root" ls-files --cached --others --exclude-standard -- '*.md')
+  [[ "$failures" -gt "$before" ]] || echo "ok Markdown links"
 }
 
 check_usage() {
@@ -205,8 +248,9 @@ check_usage() {
   for file in \
     "$repo_root/infratructure/on-premises/virtual-machine/debian12/install.sh" \
     "$repo_root"/helm/deployment/*/*/install.sh \
-    "$repo_root"/helm/deployment/*/*/deploy.sh; do
-    [[ -f "$file" ]] || continue
+    "$repo_root"/helm/deployment/*/*/deploy.sh \
+    "$repo_root"/helm/charts/homelab-*/scripts/install.sh; do
+    [[ -s "$file" ]] || continue
     status=0
     "$file" >/dev/null 2>&1 </dev/null || status=$?
     [[ "$status" -eq 2 ]] || fail "${file#"$repo_root"/}: expected exit 2 without arguments, got $status"

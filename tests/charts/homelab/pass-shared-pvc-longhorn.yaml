@@ -1,0 +1,9 @@
+# The RKE2 overlay: a ReadWriteMany claim on Longhorn in hlab-filestore.
+# expect: namespace: hlab-filestore
+# expect: storageClassName: longhorn
+# expect: - ReadWriteMany
+# expect: helm.sh/resource-policy: keep
+homelab-shared-pvc:
+  enabled: true
+  storageClassName: longhorn
+  accessModes: [ReadWriteMany]

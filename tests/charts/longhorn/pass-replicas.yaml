@@ -1,0 +1,5 @@
+# expect: numberOfReplicas: "2"
+# expect: storageclass.kubernetes.io/is-default-class: "false"
+longhorn:
+  persistence:
+    defaultClassReplicaCount: 2
