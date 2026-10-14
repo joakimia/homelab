@@ -7,21 +7,6 @@ image:
   tag: v1.26.0-p0
   pullPolicy: IfNotPresent
 
-database:
-  host: postgres
-  port: 5432
-  existingSecret: postgres-credentials
-  usernameSecretKey: POSTGRES_USER
-  passwordSecretKey: POSTGRES_PASSWORD
-  databaseSecretKey: POSTGRES_DB
-
-pool:
-  mode: transaction
-  defaultPoolSize: 10
-
-service:
-  port: 6432
-
 replicaCount: 1
 
 resources:
@@ -31,3 +16,51 @@ resources:
   limits:
     cpu: 250m
     memory: 128Mi
+
+probes:
+  startup:
+    tcpSocket:
+      port: 5432
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    tcpSocket:
+      port: 5432
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  liveness:
+    tcpSocket:
+      port: 5432
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+service:
+  port: 6432
+  containerPort: 5432
+
+defaultEnv:
+  DB_HOST: postgres
+  DB_PORT: 5432
+  LISTEN_PORT: "{{ .Values.service.containerPort }}"
+  AUTH_TYPE: plain
+  POOL_MODE: transaction
+  DEFAULT_POOL_SIZE: 10
+
+env: {} # Override defaultEnv or add additional environment variables as needed
+
+defaultSecrets:
+  # Owned by the postgres chart.
+  database:
+    name: postgres-credentials
+    env:
+      DB_NAME: POSTGRES_DB
+      DB_USER: POSTGRES_USER
+      DB_PASSWORD: POSTGRES_PASSWORD
+
+secrets: {} # Override defaultSecrets or add additional secrets as needed

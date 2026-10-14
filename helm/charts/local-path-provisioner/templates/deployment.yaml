@@ -5,6 +5,23 @@
 {{- $_ := required "image.pullPolicy is required" .Values.image.pullPolicy -}}
 {{- $_ := required "provisionerName is required" .Values.provisionerName -}}
 {{- $_ := required "healthPort is required" .Values.healthPort -}}
+{{- $_ := required "probes settings are required" .Values.probes -}}
+{{- $_ := required "probes.startup settings are required" .Values.probes.startup -}}
+{{- $_ := required "probes.startup.initialDelaySeconds is required" .Values.probes.startup.initialDelaySeconds -}}
+{{- $_ := required "probes.startup.periodSeconds is required" .Values.probes.startup.periodSeconds -}}
+{{- $_ := required "probes.startup.timeoutSeconds is required" .Values.probes.startup.timeoutSeconds -}}
+{{- $_ := required "probes.startup.failureThreshold is required" .Values.probes.startup.failureThreshold -}}
+{{- $_ := required "probes.readiness settings are required" .Values.probes.readiness -}}
+{{- $_ := required "probes.readiness.initialDelaySeconds is required" .Values.probes.readiness.initialDelaySeconds -}}
+{{- $_ := required "probes.readiness.periodSeconds is required" .Values.probes.readiness.periodSeconds -}}
+{{- $_ := required "probes.readiness.timeoutSeconds is required" .Values.probes.readiness.timeoutSeconds -}}
+{{- $_ := required "probes.readiness.failureThreshold is required" .Values.probes.readiness.failureThreshold -}}
+{{- $_ := required "probes.liveness settings are required" .Values.probes.liveness -}}
+{{- $_ := required "probes.liveness.initialDelaySeconds is required" .Values.probes.liveness.initialDelaySeconds -}}
+{{- $_ := required "probes.liveness.periodSeconds is required" .Values.probes.liveness.periodSeconds -}}
+{{- $_ := required "probes.liveness.timeoutSeconds is required" .Values.probes.liveness.timeoutSeconds -}}
+{{- $_ := required "probes.liveness.failureThreshold is required" .Values.probes.liveness.failureThreshold -}}
+{{- $_ := required "resources are required" .Values.resources -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -64,8 +81,6 @@ spec:
             - name: health
               containerPort: {{ .Values.healthPort }}
               protocol: TCP
-          # The image is scratch with a static binary that only talks to the API server;
-          # the helper pods do the work on the node.
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -73,27 +88,23 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 65532
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: config
               mountPath: /etc/config/
+          {{- with .Values.probes.startup }}
           startupProbe:
-            httpGet:
-              path: /health
-              port: health
-            periodSeconds: 5
-            failureThreshold: 12
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: health
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.readiness }}
           readinessProbe:
-            httpGet:
-              path: /ready
-              port: health
-            periodSeconds: 5
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.liveness }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: config
           configMap:

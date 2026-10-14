@@ -6,11 +6,12 @@ namespaces:
     purpose: networking
     podSecurityEnforce: privileged
     enabled: true
+  # cert-manager. No NetworkPolicies: the API server must reach its webhook.
   platform:
     name: hlab-platform
     purpose: platform
     podSecurityEnforce: baseline
-    enabled: false
+    enabled: true
   observability:
     name: hlab-observability
     purpose: observability

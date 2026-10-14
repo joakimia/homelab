@@ -12,16 +12,16 @@ Normally installed by the cluster profile's `deploy.sh` after `postgres`. To ins
 
 ## Secrets
 
-Uses `postgres-credentials`, which the postgres chart's install script creates. This script stops with a clear message if it is missing.
+Uses `postgres-credentials`, which the postgres chart's install script creates. Install postgres first.
 
 ## Values
 
 | Value | Default | Purpose |
 |---|---|---|
-| `database.host` / `port` | `postgres` / `5432` | Backend PostgreSQL Service. |
-| `database.existingSecret` and `*SecretKey` | `postgres-credentials` | Secret and key names. |
-| `pool.mode` / `defaultPoolSize` | `transaction` / `10` | Pool settings. |
-| `service.port` | `6432` | Port clients use. |
+| `defaultEnv` | `DB_HOST=postgres`, `POOL_MODE=transaction`, … | Backend and pool settings ([image docs](https://github.com/edoburu/docker-pgbouncer)). |
+| `defaultSecrets.database` | `postgres-credentials` | `DB_NAME`, `DB_USER`, `DB_PASSWORD`. |
+| `probes.*` | `tcpSocket` | Startup, readiness, and liveness probes. |
+| `service.port` / `containerPort` | `6432` / `5432` | Port clients use / port PgBouncer listens on in the pod. |
 
 ## Templates
 

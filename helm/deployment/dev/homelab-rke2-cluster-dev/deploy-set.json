@@ -4,6 +4,8 @@
   },
   "releases": [
     { "chart": "platform" },
+    { "chart": "cert-manager" },
+    { "chart": "cert-issuers" },
     { "chart": "local-path-provisioner" },
     { "chart": "traefik" },
     { "chart": "postgres" },

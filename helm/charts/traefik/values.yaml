@@ -7,24 +7,6 @@ image:
   tag: v3.7.14
   pullPolicy: IfNotPresent
 
-nameOverride: ""
-
-# Unprivileged ports: HTTP on 8080 and HTTPS on 8443 on the node, the dashboard/ping
-# entrypoint on 9000 inside the pod only.
-ports:
-  web:
-    containerPort: 8080
-    hostPort: 8080
-  websecure:
-    containerPort: 8443
-    hostPort: 8443
-  api:
-    containerPort: 9000
-
-ingress:
-  className: traefik
-  isDefaultClass: false
-
 replicaCount: 1
 
 resources:
@@ -34,6 +16,54 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
+
+probes:
+  startup:
+    httpGet:
+      path: /ping
+      port: 9000
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 12
+  readiness:
+    httpGet:
+      path: /ping
+      port: 9000
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  liveness:
+    httpGet:
+      path: /ping
+      port: 9000
+    initialDelaySeconds: 0
+    periodSeconds: 20
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+# Container ports by name. hostPort exposes web/websecure on the node; traefik (/ping) stays in the pod.
+ports:
+  web:
+    containerPort: 8080
+    hostPort: 8080
+  websecure:
+    containerPort: 8443
+    hostPort: 8443
+  traefik:
+    containerPort: 9000
+
+# With a load balancer: type LoadBalancer, ports 80/443, and no hostPorts.
+service:
+  type: ClusterIP
+  ports:
+    web: 8080
+    websecure: 8443
+
+ingress:
+  className: traefik
+  isDefaultClass: false
 
 podAnnotations: {}
 

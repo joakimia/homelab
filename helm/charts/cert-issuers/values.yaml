@@ -1,0 +1,21 @@
+namespace: hlab-platform
+
+name: cert-issuer
+
+# Used by Ingresses as cert-manager.io/cluster-issuer: <name>.
+clusterIssuer:
+  name: homelab-ca
+
+defaultEnv: {}
+
+env: {} # Override defaultEnv or add additional environment variables as needed
+
+defaultSecrets:
+  # TLS Secret from the local CA, created by scripts/install.sh.
+  ca:
+    name: homelab-ca
+    keys:
+      certificate: tls.crt
+      privateKey: tls.key
+
+secrets: {} # Override defaultSecrets or add additional secrets as needed

@@ -115,8 +115,11 @@ deploy_releases() {
   echo "Ingresses:"
   kubectl get ingress -A
   echo
-  echo "Point pgadmin.homelab.com and homepage.homelab.com at the VM IP (DNS or /etc/hosts), then open http://homepage.homelab.com:8080/"
-  echo "Without DNS: curl --resolve homepage.homelab.com:8080:<VM-IP> http://homepage.homelab.com:8080/"
+  echo "Certificates (READY True once cert-manager has signed them):"
+  kubectl get certificate -A
+  echo
+  echo "Point pgadmin.homelab.com and homepage.homelab.com at the VM IP (DNS or /etc/hosts), then open https://homepage.homelab.com:8443/"
+  echo "Without DNS: curl --cacert .local/homelab-ca/ca.crt --resolve homepage.homelab.com:8443:<VM-IP> https://homepage.homelab.com:8443/"
 }
 
 case "${1:-}" in

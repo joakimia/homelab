@@ -13,7 +13,7 @@ spec:
   selector:
     app.kubernetes.io/name: {{ .Values.name }}
   ports:
-    - name: {{ .Values.name }}
+    - name: postgresql
       port: {{ .Values.service.port }}
-      targetPort: {{ .Values.name }}
+      targetPort: postgresql
       protocol: TCP

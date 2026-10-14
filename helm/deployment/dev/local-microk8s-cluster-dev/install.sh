@@ -2,6 +2,8 @@
 # Installs this profile on the VM over SSH: bundles helm/charts and this profile, copies the
 # bundle to ~/homelab-deploy/<cluster> on the VM, and runs ./deploy.sh --local there with the
 # VM's own kubeconfig. The profile folder name is the cluster name.
+# The local CA (cert-issuers chart) is created and trusted on the Mac, and is on the node
+# only during the deploy.
 #
 #   ./install.sh debian@<vm-ip>
 #
@@ -20,9 +22,12 @@ repo_root="$(cd "$profile_dir/../../../.." && pwd)"
 profile_path="${profile_dir#"$repo_root"/}"
 cluster_name="$(basename "$profile_dir")"
 remote_dir="homelab-deploy/$cluster_name"
+ca_dir="${HOMELAB_CA_DIR:-$PWD/.local/homelab-ca}"
 
 command -v ssh >/dev/null || { echo "ssh is required" >&2; exit 1; }
 command -v scp >/dev/null || { echo "scp is required" >&2; exit 1; }
+
+HOMELAB_CA_DIR="$ca_dir" "$repo_root/helm/charts/cert-issuers/scripts/install.sh" --ca-only
 
 temp_archive="$(mktemp "${TMPDIR:-/tmp}/homelab-$cluster_name.XXXXXX")"
 # Short path: SSH control sockets are limited to about 104 bytes, and macOS $TMPDIR is long.
@@ -44,4 +49,6 @@ echo "Copying the charts and $profile_path to $target..."
 # Replace the previous bundle so removed files do not linger on the VM.
 ssh "${ssh_opts[@]}" "$target" "rm -rf '$remote_dir' && mkdir -p '$remote_dir'"
 scp "${ssh_opts[@]}" -q "$temp_archive" "$target:$remote_dir/charts.tar.gz"
-ssh "${ssh_opts[@]}" -t "$target" "export PATH=/snap/bin:/usr/local/bin:\$PATH; tar -xzf '$remote_dir/charts.tar.gz' -C '$remote_dir' && cd '$remote_dir/$profile_path' && bash ./deploy.sh --local"
+ssh "${ssh_opts[@]}" "$target" "umask 077 && mkdir '$remote_dir/homelab-ca'"
+scp "${ssh_opts[@]}" -q "$ca_dir/ca.crt" "$ca_dir/ca.key" "$target:$remote_dir/homelab-ca/"
+ssh "${ssh_opts[@]}" -t "$target" "export PATH=/snap/bin:/usr/local/bin:\$PATH; tar -xzf '$remote_dir/charts.tar.gz' -C '$remote_dir' && cd '$remote_dir/$profile_path' && HOMELAB_CA_DIR=\$HOME/$remote_dir/homelab-ca bash ./deploy.sh --local; status=\$?; rm -rf \$HOME/$remote_dir/homelab-ca; exit \$status"

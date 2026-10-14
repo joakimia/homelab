@@ -7,11 +7,22 @@
 {{- $_ := required "image settings are required" .Values.image -}}
 {{- $_ := required "image.repository is required" .Values.image.repository -}}
 {{- $_ := required "image.tag is required" .Values.image.tag -}}
-{{- $_ := required "database settings are required" .Values.database -}}
-{{- $_ := required "database.existingSecret is required" .Values.database.existingSecret -}}
-{{- $_ := required "database.passwordSecretKey is required" .Values.database.passwordSecretKey -}}
-{{- $_ := required "database.usernameSecretKey is required" .Values.database.usernameSecretKey -}}
-{{- $_ := required "database.databaseSecretKey is required" .Values.database.databaseSecretKey -}}
+{{- $_ := required "probes settings are required" .Values.probes -}}
+{{- $_ := required "probes.startup settings are required" .Values.probes.startup -}}
+{{- $_ := required "probes.startup.initialDelaySeconds is required" .Values.probes.startup.initialDelaySeconds -}}
+{{- $_ := required "probes.startup.periodSeconds is required" .Values.probes.startup.periodSeconds -}}
+{{- $_ := required "probes.startup.timeoutSeconds is required" .Values.probes.startup.timeoutSeconds -}}
+{{- $_ := required "probes.startup.failureThreshold is required" .Values.probes.startup.failureThreshold -}}
+{{- $_ := required "probes.readiness settings are required" .Values.probes.readiness -}}
+{{- $_ := required "probes.readiness.initialDelaySeconds is required" .Values.probes.readiness.initialDelaySeconds -}}
+{{- $_ := required "probes.readiness.periodSeconds is required" .Values.probes.readiness.periodSeconds -}}
+{{- $_ := required "probes.readiness.timeoutSeconds is required" .Values.probes.readiness.timeoutSeconds -}}
+{{- $_ := required "probes.readiness.failureThreshold is required" .Values.probes.readiness.failureThreshold -}}
+{{- $_ := required "probes.liveness settings are required" .Values.probes.liveness -}}
+{{- $_ := required "probes.liveness.initialDelaySeconds is required" .Values.probes.liveness.initialDelaySeconds -}}
+{{- $_ := required "probes.liveness.periodSeconds is required" .Values.probes.liveness.periodSeconds -}}
+{{- $_ := required "probes.liveness.timeoutSeconds is required" .Values.probes.liveness.timeoutSeconds -}}
+{{- $_ := required "probes.liveness.failureThreshold is required" .Values.probes.liveness.failureThreshold -}}
 {{- $_ := required "storage settings are required" .Values.storage -}}
 {{- $_ := required "storage.size is required" .Values.storage.size -}}
 {{- $_ := required "resources are required" .Values.resources -}}
@@ -36,40 +47,27 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: {{ .Values.name }}
-              containerPort: 5432
+            - name: postgresql
+              containerPort: {{ .Values.service.containerPort }}
+          {{- with include "homelab.containerEnv" . | trim }}
           env:
-            - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.existingSecret }}
-                  key: {{ .Values.database.databaseSecretKey }}
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.existingSecret }}
-                  key: {{ .Values.database.usernameSecretKey }}
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.database.existingSecret }}
-                  key: {{ .Values.database.passwordSecretKey }}
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
+            {{- . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+          {{- with .Values.probes.startup }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.readiness }}
           readinessProbe:
-            exec:
-              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
-            periodSeconds: 10
-            timeoutSeconds: 5
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.liveness }}
           livenessProbe:
-            exec:
-              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
-            initialDelaySeconds: 30
-            periodSeconds: 20
-            timeoutSeconds: 5
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
   volumeClaimTemplates:

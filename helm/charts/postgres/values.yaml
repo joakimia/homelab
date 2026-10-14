@@ -7,21 +7,6 @@ image:
   tag: 17.11-alpine3.24
   pullPolicy: IfNotPresent
 
-database:
-  name: homelab
-  user: homelab
-  existingSecret: postgres-credentials
-  passwordSecretKey: POSTGRES_PASSWORD
-  usernameSecretKey: POSTGRES_USER
-  databaseSecretKey: POSTGRES_DB
-
-storage:
-  size: 2Gi
-  storageClassName: homelab-pvc-storage
-
-service:
-  port: 5432
-
 replicaCount: 1
 
 resources:
@@ -31,3 +16,50 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
+
+probes:
+  startup:
+    exec:
+      command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    exec:
+      command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  liveness:
+    exec:
+      command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+service:
+  port: 5432
+  containerPort: 5432
+
+storage:
+  size: 2Gi
+  storageClassName: homelab-pvc-storage
+
+defaultEnv:
+  PGDATA: /var/lib/postgresql/data/pgdata
+
+env: {} # Override defaultEnv or add additional environment variables as needed
+
+defaultSecrets:
+  # Also read by PgBouncer.
+  credentials:
+    name: postgres-credentials
+    env:
+      POSTGRES_DB: POSTGRES_DB
+      POSTGRES_USER: POSTGRES_USER
+      POSTGRES_PASSWORD: POSTGRES_PASSWORD
+
+secrets: {} # Override defaultSecrets or add additional secrets as needed

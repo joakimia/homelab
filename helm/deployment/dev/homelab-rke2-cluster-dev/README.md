@@ -2,7 +2,7 @@
 
 **Work in progress.** The charts pass `tests/check.sh` (lint and template), but this profile has not been deployed to an RKE2 node yet.
 
-Deploys the same stack as the [MicroK8s profile](../local-microk8s-cluster-dev/README.md) (platform, Traefik, PostgreSQL, PgBouncer, pgAdmin, and the Caddy homepage) to a single RKE2 control-plane node, for now a VM in UTM. The order and Helm flags are in `deploy-set.json`. Only `platform/values.yaml` differs from the chart defaults. Every workload runs one replica.
+Deploys the same stack as the [MicroK8s profile](../local-microk8s-cluster-dev/README.md) (platform, cert-manager with the `homelab-ca` issuer, Traefik, PostgreSQL, PgBouncer, pgAdmin, and the Caddy homepage) to a single RKE2 control-plane node, for now a VM in UTM. The order and Helm flags are in `deploy-set.json`. Only `platform/values.yaml` differs from the chart defaults. Every workload runs one replica.
 
 ## What differs from MicroK8s
 
@@ -23,10 +23,10 @@ Provision the node with the [RKE2 seed](../../../../infratructure/on-premises/de
 NODE_IP=192.168.64.20   # in the VM console: ip -4 -o addr show dev enp0s1
 infratructure/on-premises/debian12/install.sh rke2 control-plane-node "debian@$NODE_IP"
 helm/deployment/dev/homelab-rke2-cluster-dev/install.sh "debian@$NODE_IP"
-curl --resolve "homepage.homelab.com:8080:$NODE_IP" http://homepage.homelab.com:8080/
+curl --cacert .local/homelab-ca/ca.crt --resolve "homepage.homelab.com:8443:$NODE_IP" https://homepage.homelab.com:8443/
 ```
 
-`install.sh` and `deploy.sh` work the same as in the MicroK8s profile; see its [entry points](../local-microk8s-cluster-dev/README.md#entry-points). The kubeconfig is written to `./.local/homelab-rke2-cluster-dev.kubeconfig` with context `homelab-rke2-cluster-dev`.
+`install.sh` and `deploy.sh` work the same as in the MicroK8s profile; see its [entry points](../local-microk8s-cluster-dev/README.md#entry-points). HTTPS uses the same local CA as the MicroK8s profile. The kubeconfig is written to `./.local/homelab-rke2-cluster-dev.kubeconfig` with context `homelab-rke2-cluster-dev`.
 
 If you created `homelab-pvc-storage` by hand while testing, delete it first (`kubectl delete storageclass homelab-pvc-storage`). Otherwise the platform release cannot adopt it, and a StorageClass's provisioner cannot be changed in place.
 

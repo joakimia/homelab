@@ -8,6 +8,7 @@
 #                          dash -n on every runcmd script block (cloud-init runs them with sh).
 #   ./check.sh charts      helm lint and helm template for each chart in each deploy-set.json,
 #                          with the profile's values overlay; JSON files must parse.
+#                          Fetches chart dependencies (needs network).
 #   ./check.sh usage       Entry-point scripts exit 2 and print usage without arguments.
 #
 # Needs bash, jq, helm, dash, and ruby or python3 with PyYAML. shellcheck is optional
@@ -111,6 +112,10 @@ check_charts() {
         fail "${deploy_set#"$repo_root"/}: chart '$chart' has no executable scripts/install.sh"
         continue
       fi
+      if grep -q '^dependencies:' "$repo_root/helm/charts/$chart/Chart.yaml"; then
+        helm dependency build "$repo_root/helm/charts/$chart" >/dev/null \
+          || { fail "helm dependency build $chart"; continue; }
+      fi
       overlay="$(jq -r --arg c "$chart" '.releases[] | select(.chart == $c) | .values // empty' "$deploy_set")"
       overlay="${overlay:-$chart/values.yaml}"
       args=()
@@ -130,7 +135,7 @@ check_usage() {
   local file status
   echo "==> usage"
   for file in \
-    "$repo_root/infratructure/on-premises/debian12/install.sh" \
+    "$repo_root/infratructure/on-premises/virtual-machine/debian12/install.sh" \
     "$repo_root"/helm/deployment/*/*/install.sh \
     "$repo_root"/helm/deployment/*/*/deploy.sh; do
     [[ -f "$file" ]] || continue

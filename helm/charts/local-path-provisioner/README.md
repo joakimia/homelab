@@ -28,6 +28,7 @@ No Secrets are needed.
 | `namespace` | `hlab-storage` | Must match the platform chart's `namespaces.storage.name`. |
 | `provisionerName` | `rancher.io/local-path` | Must match the StorageClass `provisioner` in the platform overlay. |
 | `nodePath` | `/opt/local-path-provisioner` | Folder on every node for the volumes. |
+| `probes.*` | `httpGet /health`, `/ready` | Startup, readiness, and liveness probes. |
 | `healthPort` | `8080` | `/health` and `/ready`, inside the pod only. |
 
 ## Templates

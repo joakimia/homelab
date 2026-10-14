@@ -2,21 +2,59 @@ namespace: hlab-frontend-apps
 
 name: homepage
 
+host: homepage.homelab.com
+
 image:
   repository: caddy
   tag: 2.11.6-alpine
   pullPolicy: IfNotPresent
 
-host: homepage.homelab.com
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
+
+probes:
+  startup:
+    httpGet:
+      path: /
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    httpGet:
+      path: /
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  liveness:
+    httpGet:
+      path: /
+      port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
 
 service:
   port: 8080
   containerPort: 8080
 
-replicaCount: 1
-
 ingress:
   className: traefik
+  # Certificate for host from cert-manager (needs the cert-manager and cert-issuers charts).
+  tls:
+    enabled: true
+    clusterIssuer: homelab-ca
 
 content: |
   <!doctype html>
@@ -29,6 +67,14 @@ content: |
   <body>
     <h1>Homelab</h1>
     <p>Welcome. This page is served from Kubernetes through Traefik.</p>
-    <ul><li><a href="http://pgadmin.homelab.com:8080">pgAdmin</a></li></ul>
+    <ul><li><a href="https://pgadmin.homelab.com:8443/">pgAdmin</a></li></ul>
   </body>
   </html>
+
+defaultEnv: {}
+
+env: {} # Override defaultEnv or add additional environment variables as needed
+
+defaultSecrets: {}
+
+secrets: {} # Override defaultSecrets or add additional secrets as needed

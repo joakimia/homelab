@@ -6,6 +6,23 @@
 {{- $_ := required "image.tag is required" .Values.image.tag -}}
 {{- $_ := required "service settings are required" .Values.service -}}
 {{- $_ := required "service.containerPort is required" .Values.service.containerPort -}}
+{{- $_ := required "probes settings are required" .Values.probes -}}
+{{- $_ := required "probes.startup settings are required" .Values.probes.startup -}}
+{{- $_ := required "probes.startup.initialDelaySeconds is required" .Values.probes.startup.initialDelaySeconds -}}
+{{- $_ := required "probes.startup.periodSeconds is required" .Values.probes.startup.periodSeconds -}}
+{{- $_ := required "probes.startup.timeoutSeconds is required" .Values.probes.startup.timeoutSeconds -}}
+{{- $_ := required "probes.startup.failureThreshold is required" .Values.probes.startup.failureThreshold -}}
+{{- $_ := required "probes.readiness settings are required" .Values.probes.readiness -}}
+{{- $_ := required "probes.readiness.initialDelaySeconds is required" .Values.probes.readiness.initialDelaySeconds -}}
+{{- $_ := required "probes.readiness.periodSeconds is required" .Values.probes.readiness.periodSeconds -}}
+{{- $_ := required "probes.readiness.timeoutSeconds is required" .Values.probes.readiness.timeoutSeconds -}}
+{{- $_ := required "probes.readiness.failureThreshold is required" .Values.probes.readiness.failureThreshold -}}
+{{- $_ := required "probes.liveness settings are required" .Values.probes.liveness -}}
+{{- $_ := required "probes.liveness.initialDelaySeconds is required" .Values.probes.liveness.initialDelaySeconds -}}
+{{- $_ := required "probes.liveness.periodSeconds is required" .Values.probes.liveness.periodSeconds -}}
+{{- $_ := required "probes.liveness.timeoutSeconds is required" .Values.probes.liveness.timeoutSeconds -}}
+{{- $_ := required "probes.liveness.failureThreshold is required" .Values.probes.liveness.failureThreshold -}}
+{{- $_ := required "resources are required" .Values.resources -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,13 +47,15 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.service.containerPort }}
+          {{- with include "homelab.containerEnv" . | trim }}
+          env:
+            {{- . | nindent 12 }}
+          {{- end }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop: [ALL]
-              # Not for the port (8080 is unprivileged): the caddy image sets this as a file
-              # capability on /usr/bin/caddy, and exec fails ("operation not permitted") when
-              # it is missing from the container's capability set.
+              # The caddy binary carries it as a file capability; exec fails without it.
               add: [NET_BIND_SERVICE]
             runAsNonRoot: true
             runAsUser: 1000
@@ -53,17 +72,24 @@ spec:
               mountPath: /data
             - name: caddy-config
               mountPath: /config
+          {{- with .Values.probes.startup }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.readiness }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.liveness }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
-            requests:
-              cpu: 10m
-              memory: 16Mi
-            limits:
-              cpu: 100m
-              memory: 64Mi
+            {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: content
           configMap:
-            name: homepage-content
+            name: {{ .Values.name }}-content
         - name: caddy-data
           emptyDir: {}
         - name: caddy-config

@@ -1,30 +1,3 @@
-namespace: hlab-database
-
-image:
-  repository: postgres
-  tag: 17.11-alpine3.24
-  pullPolicy: IfNotPresent
-
-database:
-  name: homelab
-  user: homelab
-  existingSecret: postgres-credentials
-  passwordSecretKey: POSTGRES_PASSWORD
-  usernameSecretKey: POSTGRES_USER
-  databaseSecretKey: POSTGRES_DB
-
-storage:
-  size: 2Gi
-
-service:
-  port: 5432
-
-replicaCount: 1
-
-resources:
-  requests:
-    cpu: 100m
-    memory: 128Mi
-  limits:
-    cpu: 500m
-    memory: 512Mi
+# Optional environment specific override values for the local MicroK8s cluster goes here
+# If no override values are needed, this file can be left empty.
+# It must be defined however, if you want to deploy the chart in this environment.

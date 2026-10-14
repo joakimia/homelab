@@ -1,3 +1,7 @@
+namespace: hlab-storage
+
+name: local-path-provisioner
+
 image:
   repository: docker.io/rancher/local-path-provisioner
   tag: v0.0.37
@@ -9,19 +13,6 @@ helperImage:
   tag: 1.37.0
   pullPolicy: IfNotPresent
 
-nameOverride: ""
-
-namespace: hlab-storage
-
-# Name that StorageClasses use in their provisioner field (set in the platform chart).
-provisionerName: rancher.io/local-path
-
-# Folder on each node where volumes are created as subfolders.
-nodePath: /opt/local-path-provisioner
-
-# Port for /health and /ready inside the pod only.
-healthPort: 8080
-
 resources:
   requests:
     cpu: 10m
@@ -29,6 +20,38 @@ resources:
   limits:
     cpu: 200m
     memory: 128Mi
+
+probes:
+  startup:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 12
+  readiness:
+    httpGet:
+      path: /ready
+      port: 8080
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+  liveness:
+    httpGet:
+      path: /health
+      port: 8080
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+# Name that StorageClasses use in their provisioner field (set in the platform chart).
+provisionerName: rancher.io/local-path
+
+# Folder on each node where volumes are created as subfolders.
+nodePath: /opt/local-path-provisioner
 
 podAnnotations: {}
 

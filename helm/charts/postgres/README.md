@@ -12,7 +12,7 @@ Normally installed by the cluster profile's `deploy.sh` after `platform` and bef
 
 ## Secrets
 
-`scripts/install.sh` creates `postgres-credentials` on first install, with `POSTGRES_DB`, `POSTGRES_USER` (both `homelab`) and a random `POSTGRES_PASSWORD`. Later runs reuse it. PgBouncer uses the same Secret. Read the password with:
+`scripts/install.sh` creates `postgres-credentials` on first install (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`). Values come from environment variables with those names, a prompt (Enter = `homelab` or a generated password), or the defaults. PgBouncer uses the same Secret. Read the password with:
 
 ```sh
 kubectl get secret postgres-credentials -n hlab-database -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d; echo
@@ -22,7 +22,9 @@ kubectl get secret postgres-credentials -n hlab-database -o jsonpath='{.data.POS
 
 | Value | Default | Purpose |
 |---|---|---|
-| `database.existingSecret` and `*SecretKey` | `postgres-credentials` | Secret and key names; credentials never go in values. |
+| `defaultEnv` | `PGDATA` | Environment variables. |
+| `defaultSecrets.credentials` | `postgres-credentials` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`. |
+| `probes.*` | `exec pg_isready` | Startup, readiness, and liveness probes. |
 | `storage.size` | `2Gi` | PVC size. |
 | `storage.storageClassName` | `homelab-pvc-storage` | Created by the platform chart in the UTM profile. |
 | `service.port` | `5432` | Service port. |

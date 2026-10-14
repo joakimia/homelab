@@ -10,7 +10,7 @@ The current UTM cluster runs MicroK8s and uses the profile `helm/deployment/dev/
 
 UTM's `192.168.64.x` network and its address/DNS notes apply only to that VM. Do not carry them into the RKE2-on-hardware setup; define addressing, DNS, and routing for the home LAN there.
 
-The current stack is platform namespaces and policies, Traefik, PostgreSQL, PgBouncer, pgAdmin, and a Caddy homepage. Ingress is HTTP only, on host port 8080. An Ingress hostname does not create DNS: clients need a DNS record or hosts entry, and HTTPS needs an intentional TLS setup and trusted certificate.
+The current stack is platform namespaces and policies, cert-manager with the `cert-issuers` chart, Traefik, PostgreSQL, PgBouncer, pgAdmin, and a Caddy homepage. Ingress serves HTTPS on host port 8443 and HTTP on 8080. Certificates come from the `homelab-ca` ClusterIssuer, backed by a name-constrained local CA in `.local/homelab-ca/` that the Mac trusts once. An Ingress hostname does not create DNS: clients need a DNS record or hosts entry.
 
 ## Working rules
 
@@ -18,7 +18,7 @@ The current stack is platform namespaces and policies, Traefik, PostgreSQL, PgBo
 - Do not commit or push unless the user asks.
 - Do not add passwords, tokens, kubeconfig files, or other secrets to Git. Create secrets during installation or keep them in local, ignored files (`.local/`).
 - Distinguish implemented charts, seeds, and profiles from scaffolds and work in progress.
-- Keep documentation short and practical. Mark incomplete content as work in progress and update it as the setup is verified.
+- Keep documentation and comments short. People read them: write what is worth knowing in general (what it does, why, what to watch out for), not details found while debugging one case. Comment only what the code does not say itself. Mark incomplete content as work in progress and update it as the setup is verified.
 - Run `tests/check.sh` after changes; CI (`.github/workflows/ci.yml`) runs the same script. It covers `bash -n`, shellcheck, cloud-init YAML and `dash -n` on `runcmd` blocks, `helm lint`/`helm template` with profile overlays, and usage exits. Keep CI workflow files minimal: they install tools and call repository scripts. New checks go into `check.sh`. Do not run tests or provision/deploy against a VM or cluster unless the user asks; report exactly what was run.
 - For cloud-init changes, follow the real flow from a clean Debian install. Do not assume packages or tools are already present.
 - Other profiles are separate targets and must not be deployed automatically.

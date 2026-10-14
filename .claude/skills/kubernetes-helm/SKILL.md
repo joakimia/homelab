@@ -19,17 +19,22 @@ Follow the layout the existing charts use (`pgadmin`, `postgres`, and `traefik` 
    {{- $_ := required "image.repository is required" .Values.image.repository -}}
    ```
    Use `fail` for rules such as postgres's `replicaCount must be 1`. Named variables are fine for values reused in the body, as in `platform/templates/network-policies.yaml`.
-4. **Defaults and schema.** `values.yaml` holds every default the chart needs. Profile overlays (`helm/deployment/<env>/<cluster>/<chart>/values.yaml`) contain only what differs for that cluster, and may be empty. Update `values.schema.json` in the same change: types, `required`, and `additionalProperties: false` where the chart already uses it.
-5. **No credentials in values.** Values hold only `existingSecret` and the key names. `scripts/install.sh` creates the Secret with `kubectl create secret` only if it is missing, never overwrites it, and prints a generated login once if the user needs one.
-6. **`scripts/install.sh` contract.** Use `set -euo pipefail` and find the chart with `chart_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`.
+4. **Value order and probes.** Order top-level values like `pgbouncer`: `namespace`, `name`, (`host`), `image`, `replicaCount`, `resources`, `probes`, `service` or `ports`, `defaultEnv`, `env`, `defaultSecrets`, `secrets`, `ingress`, then chart-specific keys. Each container has startup, readiness, and liveness probes, defined in full in `probes.*` (one handler, named port) and rendered with `toYaml`.
+5. **Defaults and schema.** `values.yaml` holds every default the chart needs. Profile overlays (`helm/deployment/<env>/<cluster>/<chart>/values.yaml`) contain only what differs for that cluster, and may be empty. Update `values.schema.json` in the same change: types, `required`, and `additionalProperties: false` where the chart already uses it.
+6. **Environment and Secrets.** Values never hold credentials.
+   - `defaultEnv` (`ENV_VAR: value`) and `defaultSecrets` (`<purpose>: {name, env: {ENV_VAR: key}}`) hold what the chart needs. List their names as `required` in the schema so overlays cannot remove them. `env` and `secrets` stay empty; overlays override or add there. Keep all four as maps (Helm replaces lists).
+   - `homelab.containerEnv` in `_helpers.tpl` renders them and fails on empty or duplicate variables and, at install, on missing Secrets or keys. Copy the file unchanged to new workload charts.
+   - `scripts/install.sh` creates the chart's own Secrets if missing, never overwrites them, and takes each value from `$<KEY>`, a prompt (`secret_value`), or a default.
+7. **`scripts/install.sh` contract.** Use `set -euo pipefail` and find the chart with `chart_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`.
    - Check the required commands. Check that the namespace exists: platform owns the namespaces, so never use `--create-namespace`.
-   - Create the chart's Secrets. If `Chart.yaml` has dependencies, run `helm repo add` and `helm dependency update` here.
+   - Create the chart's Secrets. If `Chart.yaml` has dependencies, pin them in `Chart.lock` and run `helm dependency build` here (see `cert-manager`); `charts/` is ignored by Git.
    - End with `helm upgrade --install <release> "$chart_dir" --namespace <ns> "$@"`. Keep the script executable and compatible with bash 3.2.
-7. **Ports and security.** Use unprivileged ports: HTTP apps on 8080, pgAdmin on 5050, and Traefik on 8080/8443. Do not use port 80. Do not add `NET_BIND_SERVICE` for ports; add it only when the image binary has it as a file capability (caddy does: without it, exec fails with "operation not permitted"). Drop all capabilities and run as non-root.
-8. **Network policy.** Pods use `app.kubernetes.io/name: <chart>`. A new workload in a policed namespace needs a matching rule and selector in the platform chart.
-9. **README.** Keep it short: what the chart does, how to install it, Secrets, a values table, and the list of templates. Mark scaffolds as such.
-10. **Deploying it.** Add the chart to the profile's `deploy-set.json` in dependency order. Do this only when the chart is implemented, and add an overlay folder only if values differ. Update `helm/charts/README.md` if the profile's chart list changes.
-11. **Verify.** Run `helm lint helm/charts/<chart> --values <profile>/<chart>/values.yaml` and `helm template` with the same values. Do not deploy unless the user asks.
+8. **Ports and security.** Use unprivileged ports: HTTP apps on 8080, pgAdmin on 5050, and Traefik on 8080/8443. Do not use port 80. Do not add `NET_BIND_SERVICE` for ports; add it only when the image binary has it as a file capability (caddy does: without it, exec fails with "operation not permitted"). Drop all capabilities and run as non-root.
+9. **Network policy.** Pods use `app.kubernetes.io/name: <chart>`. A new workload in a policed namespace needs a matching rule and selector in the platform chart.
+10. **README.** Keep it short: what the chart does, how to install it, Secrets, a values table, and the list of templates. Mark scaffolds as such.
+11. **Own templates or upstream wrapper.** Write small workloads yourself. Wrap operators and large stacks (CloudNativePG, Longhorn, Prometheus, Grafana, Loki, Authentik, …) as a pinned dependency like `cert-manager`. Put an operator's custom resources in a separate chart installed after it (like `cert-issuers`): Helm cannot install CRDs and their resources in one release.
+12. **Deploying it.** Add the chart to the profile's `deploy-set.json` in dependency order. Do this only when the chart is implemented, and add an overlay folder only if values differ. Update `helm/charts/README.md` if the profile's chart list changes.
+13. **Verify.** Run `helm lint helm/charts/<chart> --values <profile>/<chart>/values.yaml` and `helm template` with the same values. Do not deploy unless the user asks.
 
 ## Deployment profiles
 
@@ -53,7 +58,7 @@ Check the request path one layer at a time:
 
 1. DNS/hosts resolution maps the requested hostname to the VM address; Kubernetes Ingress does not create that mapping.
 2. Traefik listens on host ports 8080/8443. Check the Ingress class, host, path, backend Service, and ready endpoints.
-3. Confirm the URL scheme and port match the entrypoint (`http://<host>:8080/`). The UTM profile serves routes over HTTP; HTTPS needs TLS configuration and a certificate trusted by the client.
+3. Confirm the URL scheme and port match the entrypoint (`https://<host>:8443/` or `http://<host>:8080/`). For a certificate warning, check `kubectl get certificate -A` (READY), that the host is in the Ingress `spec.tls`, and that the client trusts `.local/homelab-ca/ca.crt`. Traefik's own default certificate means it found no matching Secret.
 4. Check the application pod and logs only after the request has reached the correct Ingress route.
 
 For a temporary HTTP check without changing DNS, follow the profile README's `curl --resolve` examples. A Traefik 404 usually means no route matched the Host/path/entrypoint; it does not by itself prove the application is down. A browser DNS NXDOMAIN means resolution failed before Kubernetes was reached.

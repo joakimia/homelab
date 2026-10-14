@@ -5,11 +5,27 @@
 {{- $_ := required "image.tag is required" .Values.image.tag -}}
 {{- $_ := required "ports settings are required" .Values.ports -}}
 {{- $_ := required "ports.web.containerPort is required" .Values.ports.web.containerPort -}}
-{{- $_ := required "ports.web.hostPort is required" .Values.ports.web.hostPort -}}
 {{- $_ := required "ports.websecure.containerPort is required" .Values.ports.websecure.containerPort -}}
-{{- $_ := required "ports.websecure.hostPort is required" .Values.ports.websecure.hostPort -}}
-{{- $_ := required "ports.api.containerPort is required" .Values.ports.api.containerPort -}}
-{{- $_ := required "ingressClass.name is required" .Values.ingressClass.name -}}
+{{- $_ := required "ports.traefik.containerPort is required" .Values.ports.traefik.containerPort -}}
+{{- $_ := required "probes settings are required" .Values.probes -}}
+{{- $_ := required "probes.startup settings are required" .Values.probes.startup -}}
+{{- $_ := required "probes.startup.initialDelaySeconds is required" .Values.probes.startup.initialDelaySeconds -}}
+{{- $_ := required "probes.startup.periodSeconds is required" .Values.probes.startup.periodSeconds -}}
+{{- $_ := required "probes.startup.timeoutSeconds is required" .Values.probes.startup.timeoutSeconds -}}
+{{- $_ := required "probes.startup.failureThreshold is required" .Values.probes.startup.failureThreshold -}}
+{{- $_ := required "probes.readiness settings are required" .Values.probes.readiness -}}
+{{- $_ := required "probes.readiness.initialDelaySeconds is required" .Values.probes.readiness.initialDelaySeconds -}}
+{{- $_ := required "probes.readiness.periodSeconds is required" .Values.probes.readiness.periodSeconds -}}
+{{- $_ := required "probes.readiness.timeoutSeconds is required" .Values.probes.readiness.timeoutSeconds -}}
+{{- $_ := required "probes.readiness.failureThreshold is required" .Values.probes.readiness.failureThreshold -}}
+{{- $_ := required "probes.liveness settings are required" .Values.probes.liveness -}}
+{{- $_ := required "probes.liveness.initialDelaySeconds is required" .Values.probes.liveness.initialDelaySeconds -}}
+{{- $_ := required "probes.liveness.periodSeconds is required" .Values.probes.liveness.periodSeconds -}}
+{{- $_ := required "probes.liveness.timeoutSeconds is required" .Values.probes.liveness.timeoutSeconds -}}
+{{- $_ := required "probes.liveness.failureThreshold is required" .Values.probes.liveness.failureThreshold -}}
+{{- $_ := required "resources are required" .Values.resources -}}
+{{- $_ := required "ingress settings are required" .Values.ingress -}}
+{{- $_ := required "ingress.className is required" .Values.ingress.className -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -55,11 +71,13 @@ spec:
             - --global.checknewversion=false
             - --global.sendanonymoususage=false
             - --providers.kubernetesingress=true
-            - --providers.kubernetesingress.ingressclass={{ .Values.ingressClass.name }}
+            - --providers.kubernetesingress.ingressclass={{ .Values.ingress.className }}
             - --providers.kubernetesingress.allowexternalnameservices=false
             - --entrypoints.web.address=:{{ .Values.ports.web.containerPort }}
             - --entrypoints.websecure.address=:{{ .Values.ports.websecure.containerPort }}
-            - --entrypoints.traefik.address=:{{ .Values.ports.api.containerPort }}
+            # TLS on websecure for every route; certificate from the Ingress spec.tls Secret.
+            - --entrypoints.websecure.http.tls=true
+            - --entrypoints.traefik.address=:{{ .Values.ports.traefik.containerPort }}
             - --ping=true
             - --ping.entrypoint=traefik
             - --accesslog=true
@@ -67,14 +85,18 @@ spec:
           ports:
             - name: web
               containerPort: {{ .Values.ports.web.containerPort }}
-              hostPort: {{ .Values.ports.web.hostPort }}
+              {{- with .Values.ports.web.hostPort }}
+              hostPort: {{ . }}
+              {{- end }}
               protocol: TCP
             - name: websecure
               containerPort: {{ .Values.ports.websecure.containerPort }}
-              hostPort: {{ .Values.ports.websecure.hostPort }}
+              {{- with .Values.ports.websecure.hostPort }}
+              hostPort: {{ . }}
+              {{- end }}
               protocol: TCP
             - name: traefik
-              containerPort: {{ .Values.ports.api.containerPort }}
+              containerPort: {{ .Values.ports.traefik.containerPort }}
               protocol: TCP
           securityContext:
             allowPrivilegeEscalation: false
@@ -83,21 +105,23 @@ spec:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
             runAsUser: 65532
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+          {{- with .Values.probes.startup }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.readiness }}
           readinessProbe:
-            tcpSocket:
-              port: web
-            initialDelaySeconds: 3
-            periodSeconds: 10
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.probes.liveness }}
           livenessProbe:
-            tcpSocket:
-              port: web
-            initialDelaySeconds: 10
-            periodSeconds: 20
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: tmp
           emptyDir: {}

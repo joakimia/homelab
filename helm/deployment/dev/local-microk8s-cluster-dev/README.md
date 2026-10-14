@@ -1,6 +1,6 @@
 # UTM MicroK8s development profile
 
-Deploys platform, Traefik, PostgreSQL, PgBouncer, pgAdmin, and the Caddy homepage to the MicroK8s VM in UTM. The order and Helm flags are in `deploy-set.json`, and the per-chart overrides are in `<chart>/values.yaml`. Every workload runs one replica.
+Deploys platform, cert-manager with the `homelab-ca` issuer, Traefik, PostgreSQL, PgBouncer, pgAdmin, and the Caddy homepage to the MicroK8s VM in UTM. The order and Helm flags are in `deploy-set.json`, and the per-chart overrides are in `<chart>/values.yaml`. Every workload runs one replica.
 
 ## Quick start
 
@@ -10,7 +10,7 @@ Provision the VM first ([guide](../../../../infratructure/on-premises/debian12/R
 VM_IP=192.168.64.9      # in the VM console: ip -4 -o addr show dev enp0s1
 infratructure/on-premises/debian12/install.sh microk8s control-plane-node "debian@$VM_IP"
 helm/deployment/dev/local-microk8s-cluster-dev/install.sh "debian@$VM_IP"
-curl --resolve "homepage.homelab.com:8080:$VM_IP" http://homepage.homelab.com:8080/
+curl --cacert .local/homelab-ca/ca.crt --resolve "homepage.homelab.com:8443:$VM_IP" https://homepage.homelab.com:8443/
 ```
 
 ## Entry points
@@ -46,9 +46,17 @@ kubectl get secret postgres-credentials -n hlab-database -o jsonpath='{.data.POS
 
 PostgreSQL uses the `homelab-pvc-storage` class. The platform chart creates it from this profile's overlay, with MicroK8s's `microk8s.io/hostpath` provisioner.
 
+## HTTPS
+
+The first `install.sh` creates a local CA in `./.local/homelab-ca/` and trusts it in the macOS keychain (asks for your password once). cert-manager signs a certificate for each Ingress host with it, so `https://homepage.homelab.com:8443/` opens without a warning. All clusters share the CA. See [cert-issuers](../../../charts/cert-issuers/README.md).
+
+```sh
+kubectl get certificate -A   # READY True; otherwise Traefik serves its self-signed default
+```
+
 ## Reach it from the Mac
 
-Traefik listens on host ports **8080** (HTTP) and 8443; port 80 is not used. An Ingress hostname does not create DNS. Either use `curl --resolve` as in the quick start, or add `/etc/hosts` entries for `homepage.homelab.com` and `pgadmin.homelab.com` pointing to the VM. The homepage also answers on `http://<VM-IP>:8080/` without a hostname.
+Traefik listens on host ports **8443** (HTTPS) and 8080 (HTTP); ports 443 and 80 are not used, so URLs include the port. An Ingress hostname does not create DNS. Either use `curl --resolve` as in the quick start, or add `/etc/hosts` entries for `homepage.homelab.com` and `pgadmin.homelab.com` pointing to the VM. The homepage also answers on `http://<VM-IP>:8080/` without a hostname (no certificate for a bare IP).
 
 UTM Shared Network uses DHCP on `192.168.64.0/24`, with gateway and DNS at `192.168.64.1`, so the VM address can change. Update `/etc/hosts` and rerun `deploy.sh --kubeconfig` when it does. For a fixed address, either:
 

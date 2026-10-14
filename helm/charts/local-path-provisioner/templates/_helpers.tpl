@@ -1,9 +1,5 @@
 {{- define "local-path-provisioner.fullname" -}}
-{{- if .Values.nameOverride -}}
-{{- .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- .Chart.Name -}}
-{{- end -}}
+{{- .Values.name | default .Chart.Name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "local-path-provisioner.selectorLabels" -}}
