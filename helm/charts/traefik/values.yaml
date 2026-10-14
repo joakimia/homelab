@@ -17,11 +17,22 @@ resources:
     cpu: 500m
     memory: 512Mi
 
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+
+podSecurityContext: {}
+
 probes:
   startup:
     httpGet:
       path: /ping
-      port: 9000
+      port: traefik
     initialDelaySeconds: 0
     periodSeconds: 5
     timeoutSeconds: 2
@@ -29,7 +40,7 @@ probes:
   readiness:
     httpGet:
       path: /ping
-      port: 9000
+      port: traefik
     initialDelaySeconds: 0
     periodSeconds: 10
     timeoutSeconds: 2
@@ -37,13 +48,12 @@ probes:
   liveness:
     httpGet:
       path: /ping
-      port: 9000
+      port: traefik
     initialDelaySeconds: 0
     periodSeconds: 20
     timeoutSeconds: 2
     failureThreshold: 3
 
-# Container ports by name. hostPort exposes web/websecure on the node; traefik (/ping) stays in the pod.
 ports:
   web:
     containerPort: 8080
@@ -54,7 +64,6 @@ ports:
   traefik:
     containerPort: 9000
 
-# With a load balancer: type LoadBalancer, ports 80/443, and no hostPorts.
 service:
   type: ClusterIP
   ports:
@@ -64,6 +73,13 @@ service:
 ingress:
   className: traefik
   isDefaultClass: false
+
+# ForwardAuth middleware authelia@file. An Ingress opts in with the annotation
+# traefik.ingress.kubernetes.io/router.middlewares: authelia@file.
+forwardAuth:
+  enabled: true
+  address: http://authelia.hlab-platform.svc.cluster.local:9091/api/authz/forward-auth
+  authResponseHeaders: [Remote-User, Remote-Groups, Remote-Email, Remote-Name]
 
 podAnnotations: {}
 

@@ -10,6 +10,7 @@
     { "chart": "postgres" },
     { "chart": "pgbouncer" },
     { "chart": "pgadmin" },
-    { "chart": "homepage" }
+    { "chart": "homepage" },
+    { "chart": "authelia" }
   ]
 }

@@ -1,0 +1,3 @@
+# expect: maxProperties
+env:
+  FOO: bar

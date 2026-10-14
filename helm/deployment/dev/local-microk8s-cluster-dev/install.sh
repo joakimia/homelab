@@ -11,6 +11,9 @@
 set -euo pipefail
 export LC_ALL=C  # English messages from bash and tools, whatever the local language
 
+if [[ $# -eq 1 && ! "$1" =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$ ]]; then
+  echo "Invalid SSH target '$1' (expected user@host; is VM_IP set?)" >&2
+fi
 if [[ $# -ne 1 || ! "$1" =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$ ]]; then
   echo "Usage: $0 debian@<vm-ip>" >&2
   exit 2

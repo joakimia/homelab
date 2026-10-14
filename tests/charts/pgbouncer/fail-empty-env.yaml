@@ -1,0 +1,3 @@
+# expect: env.POOL_MODE is empty
+env:
+  POOL_MODE: ""

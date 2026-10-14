@@ -1,0 +1,7 @@
+# expect: httpGet:
+probes:
+  readiness:
+    tcpSocket: null
+    httpGet:
+      path: /
+      port: postgresql

@@ -18,6 +18,7 @@ No Secrets are needed.
 |---|---|---|
 | `ingress.className` | `traefik` | IngressClass of the Ingress. |
 | `ingress.tls.enabled` / `clusterIssuer` | `true` / `homelab-ca` | HTTPS with a cert-manager certificate (`<name>-tls`). |
+| `ingress.auth.enabled` / `middleware` | `false` / `authelia@file` | Login through Authelia; the route is then HTTPS only. |
 | `host` | `homepage.homelab.com` | Ingress hostname. |
 | `service.port` / `containerPort` | `8080` / `8080` | Service and Caddy port. |
 | `probes.*` | `httpGet /` | Startup, readiness, and liveness probes. |

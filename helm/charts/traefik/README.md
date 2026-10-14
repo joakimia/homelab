@@ -18,6 +18,7 @@ No Secrets are needed. Every route is served on both entrypoints; on 8443 with t
 |---|---|---|
 | `ports.web` | `8080` / host `8080` | HTTP entrypoint; `hostPort` is optional. |
 | `ports.websecure` | `8443` / host `8443` | HTTPS entrypoint (`--entrypoints.websecure.http.tls=true`). |
+| `forwardAuth.enabled` / `address` | `true` / Authelia Service | Middleware `authelia@file` (file provider), used by Ingresses with `ingress.auth.enabled`. |
 | `ports.traefik.containerPort` | `9000` | Dashboard and `/ping` (probes), not exposed. |
 | `service.type` / `ports.web` / `ports.websecure` | `ClusterIP` / `8080` / `8443` | Service for web and websecure. With a load balancer: `LoadBalancer`, `80`/`443`, no `hostPort`s. |
 | `name` | `traefik` | Name of the Deployment, Service, and RBAC objects, and the `app.kubernetes.io/name` label. |
@@ -25,7 +26,6 @@ No Secrets are needed. Every route is served on both entrypoints; on 8443 with t
 | `probes.*` | `httpGet /ping` | Startup, readiness, and liveness probes. |
 | `replicaCount` | `1` | One replica per node; host ports can only be bound once per node. |
 
-If you change the web/websecure ports, update `networkPolicies.traefik.ports` in the platform chart too.
 
 ## Templates
 

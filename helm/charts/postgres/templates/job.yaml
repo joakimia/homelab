@@ -1,0 +1,105 @@
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "image settings are required" .Values.image -}}
+{{- $_ := required "image.repository is required" .Values.image.repository -}}
+{{- $_ := required "image.tag is required" .Values.image.tag -}}
+{{- $_ := required "service settings are required" .Values.service -}}
+{{- $_ := required "service.port is required" .Values.service.port -}}
+{{- $_ := required "roles settings are required" .Values.roles -}}
+{{- $_ := required "databases settings are required" .Values.databases -}}
+{{- $credentials := (include "homelab.secrets" . | fromYaml).credentials -}}
+{{- if lookup "v1" "Namespace" "" "kube-system" -}}
+  {{- range $key, $role := .Values.roles -}}
+    {{- $secret := lookup "v1" "Secret" $.Values.namespace $role.passwordSecret.name -}}
+    {{- if not (hasKey ($secret.data | default dict) $role.passwordSecret.key) -}}
+      {{- fail (printf "Secret %s/%s with key %s (roles.%s) is missing; scripts/install.sh creates it" $.Values.namespace $role.passwordSecret.name $role.passwordSecret.key $key) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if or .Values.roles .Values.databases }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.name }}-setup
+  namespace: {{ .Values.namespace }}
+  annotations:
+    # Runs after every install and upgrade; the SQL is idempotent.
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.name }}-setup
+    spec:
+      restartPolicy: Never
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+      containers:
+        - name: setup
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PGHOST
+              value: {{ .Values.name }}
+            - name: PGPORT
+              value: {{ .Values.service.port | quote }}
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $credentials.name }}
+                  key: {{ $credentials.env.POSTGRES_DB }}
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $credentials.name }}
+                  key: {{ $credentials.env.POSTGRES_USER }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $credentials.name }}
+                  key: {{ $credentials.env.POSTGRES_PASSWORD }}
+            - name: HOME
+              value: /tmp
+            {{- range $key, $role := .Values.roles }}
+            - name: ROLE_{{ $key | upper | replace "-" "_" }}_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $role.passwordSecret.name }}
+                  key: {{ $role.passwordSecret.key }}
+            {{- end }}
+          command: [sh, -c]
+          args:
+            - |
+              set -eu
+              until pg_isready -q; do sleep 2; done
+              {{- range $key, $role := .Values.roles }}
+              echo "Role {{ $role.name }}"
+              psql -v ON_ERROR_STOP=1 -v name={{ $role.name }} -v password="$ROLE_{{ $key | upper | replace "-" "_" }}_PASSWORD" <<'SQL'
+              SELECT format('CREATE ROLE %I', :'name') WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'name') \gexec
+              ALTER ROLE :"name" WITH {{ join " " $role.options }} PASSWORD :'password';
+              SQL
+              {{- end }}
+              {{- range $database, $spec := .Values.databases }}
+              echo "Database {{ $database }}"
+              psql -v ON_ERROR_STOP=1 -v db={{ $database }} -v owner={{ $spec.owner }} <<'SQL'
+              SELECT format('CREATE DATABASE %I OWNER %I', :'db', :'owner') WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'db') \gexec
+              SQL
+              {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

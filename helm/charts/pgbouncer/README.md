@@ -1,6 +1,6 @@
 # PgBouncer chart
 
-Runs a PgBouncer connection pool in `hlab-database` in front of the `postgres` Service. Clients, such as pgAdmin, connect to `pgbouncer.hlab-database.svc.cluster.local:6432`.
+Runs a PgBouncer connection pool in `hlab-database` in front of the `postgres` Service. Apps connect to `pgbouncer.hlab-database.svc.cluster.local:6432`; pgAdmin connects to PostgreSQL directly.
 
 ## Install
 
@@ -18,8 +18,8 @@ Uses `postgres-credentials`, which the postgres chart's install script creates. 
 
 | Value | Default | Purpose |
 |---|---|---|
-| `defaultEnv` | `DB_HOST=postgres`, `POOL_MODE=transaction`, … | Backend and pool settings ([image docs](https://github.com/edoburu/docker-pgbouncer)). |
-| `defaultSecrets.database` | `postgres-credentials` | `DB_NAME`, `DB_USER`, `DB_PASSWORD`. |
+| `defaultEnv` | `DB_HOST=postgres`, `DB_NAME=*` (all databases), `POOL_MODE=transaction`, … | Backend and pool settings ([image docs](https://github.com/edoburu/docker-pgbouncer)). |
+| `defaultSecrets.database` | `postgres-credentials` | `DB_USER`, `DB_PASSWORD`. |
 | `probes.*` | `tcpSocket` | Startup, readiness, and liveness probes. |
 | `service.port` / `containerPort` | `6432` / `5432` | Port clients use / port PgBouncer listens on in the pod. |
 

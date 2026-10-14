@@ -1,0 +1,40 @@
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "service settings are required" .Values.service -}}
+{{- $_ := required "service.containerPort is required" .Values.service.containerPort -}}
+{{- $_ := required "config settings are required" .Values.config -}}
+{{- $_ := required "config.session settings are required" .Values.config.session -}}
+{{- $_ := required "config.session.domain is required" .Values.config.session.domain -}}
+{{- $_ := required "config.session.autheliaUrl is required" .Values.config.session.autheliaUrl -}}
+{{- $_ := required "config.session.defaultRedirectionUrl is required" .Values.config.session.defaultRedirectionUrl -}}
+{{- $_ := required "config.accessControl settings are required" .Values.config.accessControl -}}
+{{- $_ := required "config.accessControl.defaultPolicy is required" .Values.config.accessControl.defaultPolicy -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-config
+  namespace: {{ .Values.namespace }}
+data:
+  configuration.yml: |
+    server:
+      address: "tcp://:{{ .Values.service.containerPort }}/"
+    authentication_backend:
+      file:
+        path: /secrets/users_database.yml
+    access_control:
+      default_policy: {{ .Values.config.accessControl.defaultPolicy }}
+      {{- with .Values.config.accessControl.rules }}
+      rules:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    session:
+      cookies:
+        - domain: {{ .Values.config.session.domain | quote }}
+          authelia_url: {{ .Values.config.session.autheliaUrl | quote }}
+          default_redirection_url: {{ .Values.config.session.defaultRedirectionUrl | quote }}
+    storage:
+      local:
+        path: /data/db.sqlite3
+    notifier:
+      filesystem:
+        filename: /data/notification.txt

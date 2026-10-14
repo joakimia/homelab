@@ -22,7 +22,7 @@ Use this skill when you provision a fresh Debian machine, change a cloud-init se
 5. The jumpbox is not a cluster node. It hosts the local registry and receives the provisioning bundle (`~/homelab-bundle`), so nodes can be provisioned from it with the jumpbox's own SSH key.
 6. Ask the operator to type SSH and sudo passwords interactively. Never put passwords in arguments, scripts, logs, or Git. Only the first run needs the SSH password; the seed authorizes the provisioning machine's public key.
 7. After provisioning, check `cloud-init status --long`, `/var/log/cloud-init-output.log`, and, as appropriate, `microk8s status --wait-ready` or `systemctl status rke2-server`, then `kubectl get nodes`, `helm version`, and `k9s version`. Report which checks ran and their results.
-8. For seed changes, run the static checks: YAML parsing, and `dash -n` on each `runcmd` script block (cloud-init runs them with `/bin/sh`, which is dash on Debian). Do not provision a machine unless the user asks.
+8. For seed changes, run `tests/check.sh seeds` (YAML parsing and `dash -n` on each `runcmd` block; cloud-init runs them with `/bin/sh`, which is dash on Debian). A new seed or check belongs in `check.sh` in the same change. Do not provision a machine unless the user asks.
 
 ## Known pitfalls
 

@@ -21,11 +21,22 @@ resources:
     cpu: 200m
     memory: 128Mi
 
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+
+podSecurityContext: {}
+
 probes:
   startup:
     httpGet:
       path: /health
-      port: 8080
+      port: health
     initialDelaySeconds: 0
     periodSeconds: 5
     timeoutSeconds: 2
@@ -33,7 +44,7 @@ probes:
   readiness:
     httpGet:
       path: /ready
-      port: 8080
+      port: health
     initialDelaySeconds: 0
     periodSeconds: 5
     timeoutSeconds: 2
@@ -41,11 +52,16 @@ probes:
   liveness:
     httpGet:
       path: /health
-      port: 8080
+      port: health
     initialDelaySeconds: 0
     periodSeconds: 10
     timeoutSeconds: 2
     failureThreshold: 3
+
+ports:
+  # /health and /ready, inside the pod only.
+  health:
+    containerPort: 8080
 
 # Name that StorageClasses use in their provisioner field (set in the platform chart).
 provisionerName: rancher.io/local-path

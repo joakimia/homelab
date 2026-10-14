@@ -10,7 +10,10 @@
     "ingress",
     "resources",
     "probes",
-    "service"
+    "service",
+    "podSecurityContext",
+    "securityContext",
+    "forwardAuth"
   ],
   "properties": {
     "name": {
@@ -165,6 +168,12 @@
       "items": {
         "type": "object"
       }
+    },
+    "podSecurityContext": {
+      "type": "object"
+    },
+    "securityContext": {
+      "type": "object"
     },
     "probes": {
       "type": "object",
@@ -584,6 +593,30 @@
             }
           ],
           "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "forwardAuth": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "address"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "address": {
+          "type": "string",
+          "pattern": "^https?://"
+        },
+        "authResponseHeaders": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       },
       "additionalProperties": false

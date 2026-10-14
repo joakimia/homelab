@@ -7,9 +7,11 @@
     "namespace",
     "provisionerName",
     "nodePath",
-    "healthPort",
+    "ports",
     "resources",
-    "probes"
+    "probes",
+    "podSecurityContext",
+    "securityContext"
   ],
   "properties": {
     "name": {
@@ -37,11 +39,6 @@
     "nodePath": {
       "type": "string",
       "pattern": "^/.+"
-    },
-    "healthPort": {
-      "type": "integer",
-      "minimum": 1024,
-      "maximum": 65535
     },
     "resources": {
       "type": "object",
@@ -73,6 +70,12 @@
       "items": {
         "type": "object"
       }
+    },
+    "podSecurityContext": {
+      "type": "object"
+    },
+    "securityContext": {
+      "type": "object"
     },
     "probes": {
       "type": "object",
@@ -491,6 +494,29 @@
               ]
             }
           ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ports": {
+      "type": "object",
+      "required": [
+        "health"
+      ],
+      "properties": {
+        "health": {
+          "type": "object",
+          "required": [
+            "containerPort"
+          ],
+          "properties": {
+            "containerPort": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 65535
+            }
+          },
           "additionalProperties": false
         }
       },

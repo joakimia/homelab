@@ -14,7 +14,7 @@
   {{- $dns := required "networkPolicies.dns is required when network policies are enabled" $policies.dns -}}
   {{- $_ := required "networkPolicies.dns.namespace is required" $dns.namespace -}}
   {{- $_ := required "networkPolicies.dns.podSelector is required" $dns.podSelector -}}
-  {{- range $key := list "traefik" "pgadmin" "pgbouncer" "postgres" -}}
+  {{- range $key := list "traefik" "pgadmin" "pgbouncer" "postgres" "postgresSetup" -}}
     {{- $workload := required (printf "networkPolicies.%s is required" $key) (get $policies $key) -}}
     {{- $_ := required (printf "networkPolicies.%s.podSelector is required" $key) $workload.podSelector -}}
   {{- end -}}

@@ -1,0 +1,15 @@
+# Overlays override defaults, add variables, change only a Secret's name, and add Secrets.
+# expect: value: "session"
+# expect: name: MAX_CLIENT_CONN
+# expect: name: other-credentials
+# expect: name: ADMIN_USERS
+env:
+  POOL_MODE: session
+  MAX_CLIENT_CONN: 200
+secrets:
+  database:
+    name: other-credentials
+  admin:
+    name: pgbouncer-admin
+    env:
+      ADMIN_USERS: users

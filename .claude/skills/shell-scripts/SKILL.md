@@ -72,6 +72,7 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
 
 ## Checks before you finish
 
+- Update `tests/check.sh` with the script: a new entry point goes into `check_usage`, a new check into its own group.
 - Run `tests/check.sh` (the same checks as CI): `bash -n`, `shellcheck -S warning`, seed checks, chart lint, and usage exits. Fix shellcheck warnings rather than disabling them; when a disable is intentional, add the reason on the same line. Write empty locals as `x=''`, not `x=`.
 - `dash -n` on extracted `runcmd` blocks, for example in a `debian:12` container.
 - Run the usage paths: no arguments and wrong arguments must print usage and exit 2.

@@ -1,3 +1,17 @@
 # Optional environment specific override values for the local MicroK8s cluster goes here
 # If no override values are needed, this file can be left empty.
 # It must be defined however, if you want to deploy the chart in this environment.
+
+ingress:
+  auth:
+    enabled: true
+
+# Log in as the Authelia user: trust Remote-User from Traefik (pod network 10.1.0.0/16). Values are
+# Python literals, so the quotes are needed. IPv4 listen address, so pgAdmin sees plain IPv4 peers.
+env:
+  PGADMIN_LISTEN_ADDRESS: 0.0.0.0
+  PGADMIN_CONFIG_AUTHENTICATION_SOURCES: "['webserver']"
+  PGADMIN_CONFIG_WEBSERVER_REMOTE_USER: "'Remote-User'"
+  PGADMIN_CONFIG_WEBSERVER_REMOTE_USER_FROM_HEADER: "True"
+  PGADMIN_CONFIG_WEBSERVER_TRUSTED_PROXIES: "['10.1.0.0/16']"
+  PGADMIN_CONFIG_WEBSERVER_AUTO_CREATE_USER: "True"

@@ -9,6 +9,12 @@
 #   ./check.sh charts      helm lint and helm template for each chart in each deploy-set.json,
 #                          with the profile's values overlay; JSON files must parse.
 #                          Fetches chart dependencies (needs network).
+#   ./check.sh cases       helm template with each tests/charts/<chart>/{pass,fail}-*.yaml overlay:
+#                          pass-* must render and contain each "# expect:" text, fail-* must
+#                          fail with it.
+#                          Shared _helpers.tpl files must be identical.
+#   ./check.sh format      .editorconfig basics on files in Git: final newline, no tabs, and no
+#                          trailing whitespace (Markdown excepted).
 #   ./check.sh usage       Entry-point scripts exit 2 and print usage without arguments.
 #
 # Needs bash, jq, helm, dash, and ruby or python3 with PyYAML. shellcheck is optional
@@ -21,7 +27,7 @@ repo_root="$(cd -- "$script_dir/.." && pwd)"
 failures=0
 
 usage() {
-  echo "Usage: $0 [scripts|seeds|charts|usage]" >&2
+  echo "Usage: $0 [scripts|seeds|charts|cases|format|usage]" >&2
   exit 2
 }
 
@@ -131,6 +137,68 @@ check_charts() {
   done < <(repo_files 'deploy-set.json')
 }
 
+# Renders each chart with its test overlays and checks the outcome. "# expect: <text>" lines
+# name text the output must contain (pass-*) or the error must contain (fail-*).
+check_cases() {
+  local case_file chart expect output status count=0 helper first=''
+  echo "==> cases"
+  require helm
+  while IFS= read -r case_file; do
+    chart="$(basename "$(dirname "$case_file")")"
+    output="$(helm template "$chart" "$repo_root/helm/charts/$chart" --values "$case_file" 2>&1)" && status=0 || status=$?
+    count=$((count + 1))
+    case "$(basename "$case_file")" in
+      pass-*)
+        if [[ "$status" -ne 0 ]]; then
+          fail "${case_file#"$repo_root"/}: expected to render: $(printf '%s' "$output" | tail -n 1)"
+          continue
+        fi
+        while IFS= read -r expect; do
+          [[ "$output" == *"$expect"* ]] || fail "${case_file#"$repo_root"/}: output lacks: $expect"
+        done < <(sed -n 's/^# expect: //p' "$case_file")
+        ;;
+      fail-*)
+        expect="$(sed -n 's/^# expect: //p' "$case_file" | head -n 1)"
+        if [[ -z "$expect" ]]; then
+          fail "${case_file#"$repo_root"/}: missing '# expect: <text>' line"
+        elif [[ "$status" -eq 0 ]]; then
+          fail "${case_file#"$repo_root"/}: expected to fail with: $expect"
+        elif [[ "$output" != *"$expect"* ]]; then
+          fail "${case_file#"$repo_root"/}: failed, but not with: $expect"
+        fi
+        ;;
+      *) fail "${case_file#"$repo_root"/}: name must start with pass- or fail-" ;;
+    esac
+  done < <(find "$repo_root/tests/charts" -name '*.yaml' | sort)
+  echo "ok $count chart cases"
+
+  # Charts copy the shared env/Secret helper unchanged.
+  while IFS= read -r helper; do
+    grep -q 'define "homelab.containerEnv"' "$helper" || continue
+    if [[ -z "$first" ]]; then
+      first="$helper"
+    elif ! cmp -s "$first" "$helper"; then
+      fail "${helper#"$repo_root"/} differs from ${first#"$repo_root"/}"
+    fi
+  done < <(repo_files '_helpers.tpl')
+  echo "ok shared _helpers.tpl"
+}
+
+# Checks the .editorconfig rules on tracked and new (not ignored) text files.
+check_format() {
+  local file before=$failures
+  echo "==> format"
+  require git
+  while IFS= read -r file; do
+    [[ -f "$repo_root/$file" && -s "$repo_root/$file" ]] || continue
+    grep -Iq . "$repo_root/$file" || continue  # skip binary files
+    [[ -z "$(tail -c 1 "$repo_root/$file")" ]] || fail "$file: no newline at end of file"
+    ! grep -q $'\t' "$repo_root/$file" || fail "$file: contains tabs"
+    [[ "$file" == *.md ]] || ! grep -qE '[[:space:]]+$' "$repo_root/$file" || fail "$file: trailing whitespace"
+  done < <(git -C "$repo_root" ls-files --cached --others --exclude-standard)
+  [[ "$failures" -gt "$before" ]] || echo "ok formatting"
+}
+
 check_usage() {
   local file status
   echo "==> usage"
@@ -147,10 +215,12 @@ check_usage() {
 }
 
 case "${1:-all}" in
-  all) check_scripts; check_seeds; check_charts; check_usage ;;
+  all) check_scripts; check_seeds; check_charts; check_cases; check_format; check_usage ;;
   scripts) check_scripts ;;
   seeds) check_seeds ;;
   charts) check_charts ;;
+  cases) check_cases ;;
+  format) check_format ;;
   usage) check_usage ;;
   *) usage ;;
 esac

@@ -9,7 +9,9 @@
     "defaultEnv",
     "env",
     "defaultSecrets",
-    "secrets"
+    "secrets",
+    "podSecurityContext",
+    "securityContext"
   ],
   "properties": {
     "replicaCount": {
@@ -20,7 +22,8 @@
       "type": "object",
       "required": [
         "className",
-        "tls"
+        "tls",
+        "auth"
       ],
       "properties": {
         "className": {
@@ -43,9 +46,32 @@
             }
           },
           "additionalProperties": false
+        },
+        "auth": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "middleware"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "middleware": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
+    },
+    "podSecurityContext": {
+      "type": "object"
+    },
+    "securityContext": {
+      "type": "object"
     },
     "probes": {
       "type": "object",
@@ -523,8 +549,7 @@
       "additionalProperties": {
         "type": "object",
         "required": [
-          "name",
-          "env"
+          "name"
         ],
         "properties": {
           "name": {
@@ -545,9 +570,37 @@
               "minLength": 1,
               "pattern": "^[-._a-zA-Z0-9]+$"
             }
+          },
+          "mountPath": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[-._a-zA-Z0-9]+$"
+            }
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "anyOf": [
+          {
+            "required": [
+              "env"
+            ]
+          },
+          {
+            "required": [
+              "mountPath"
+            ]
+          }
+        ]
+      },
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
       }
     },
     "secrets": {
@@ -572,9 +625,25 @@
               "minLength": 1,
               "pattern": "^[-._a-zA-Z0-9]+$"
             }
+          },
+          "mountPath": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[-._a-zA-Z0-9]+$"
+            }
           }
         },
         "additionalProperties": false
+      },
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
       }
     }
   }

@@ -22,7 +22,7 @@ runcmd:
   - [sh, -c, 'ln -sfn /var/lib/snapd/snap /snap']
   - [snap, wait, system, seed.loaded]
 
- 
+
   # Step 2: Install MicroK8s and kubectl
   # Pinned versions. MicroK8s and kubectl follow a minor-version snap track (patch updates
   # arrive through snap refresh); Helm and k9s are exact releases checked against the SHA-256

@@ -4,7 +4,8 @@
 {{- $_ := required "image.tag is required" .Values.image.tag -}}
 {{- $_ := required "image.pullPolicy is required" .Values.image.pullPolicy -}}
 {{- $_ := required "provisionerName is required" .Values.provisionerName -}}
-{{- $_ := required "healthPort is required" .Values.healthPort -}}
+{{- $_ := required "ports settings are required" .Values.ports -}}
+{{- $_ := required "ports.health.containerPort is required" .Values.ports.health.containerPort -}}
 {{- $_ := required "probes settings are required" .Values.probes -}}
 {{- $_ := required "probes.startup settings are required" .Values.probes.startup -}}
 {{- $_ := required "probes.startup.initialDelaySeconds is required" .Values.probes.startup.initialDelaySeconds -}}
@@ -57,6 +58,10 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: local-path-provisioner
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -76,18 +81,15 @@ spec:
             - name: CONFIG_MOUNT_PATH
               value: /etc/config/
             - name: HEALTH_PORT
-              value: {{ .Values.healthPort | quote }}
+              value: {{ .Values.ports.health.containerPort | quote }}
           ports:
             - name: health
-              containerPort: {{ .Values.healthPort }}
+              containerPort: {{ .Values.ports.health.containerPort }}
               protocol: TCP
+          {{- with .Values.securityContext }}
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: [ALL]
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 65532
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: config
               mountPath: /etc/config/

@@ -25,7 +25,7 @@ usage() {
 }
 
 check_target() {
-  [[ "$1" =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$ ]] || usage
+  [[ "$1" =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$ ]] || { echo "Invalid SSH target '$1' (expected user@host; is VM_IP set?)" >&2; usage; }
 }
 
 # Copies ~/.kube/config from the VM, points it at the VM address instead of 127.0.0.1, and

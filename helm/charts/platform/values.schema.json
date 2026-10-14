@@ -1,7 +1,11 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["namespaces", "networkPolicies", "storageClass"],
+  "required": [
+    "namespaces",
+    "networkPolicies",
+    "storageClass"
+  ],
   "properties": {
     "namespaces": {
       "type": "object",
@@ -19,60 +23,147 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "networking": { "$ref": "#/definitions/namespace" },
-        "frontend": { "$ref": "#/definitions/namespace" },
-        "backendApi": { "$ref": "#/definitions/namespace" },
-        "backgroundWorkers": { "$ref": "#/definitions/namespace" },
-        "database": { "$ref": "#/definitions/namespace" },
-        "filestore": { "$ref": "#/definitions/namespace" },
-        "storage": { "$ref": "#/definitions/namespace" },
-        "platform": { "$ref": "#/definitions/namespace" },
-        "tools": { "$ref": "#/definitions/namespace" },
-        "observability": { "$ref": "#/definitions/namespace" }
+        "networking": {
+          "$ref": "#/definitions/namespace"
+        },
+        "frontend": {
+          "$ref": "#/definitions/namespace"
+        },
+        "backendApi": {
+          "$ref": "#/definitions/namespace"
+        },
+        "backgroundWorkers": {
+          "$ref": "#/definitions/namespace"
+        },
+        "database": {
+          "$ref": "#/definitions/namespace"
+        },
+        "filestore": {
+          "$ref": "#/definitions/namespace"
+        },
+        "storage": {
+          "$ref": "#/definitions/namespace"
+        },
+        "platform": {
+          "$ref": "#/definitions/namespace"
+        },
+        "tools": {
+          "$ref": "#/definitions/namespace"
+        },
+        "observability": {
+          "$ref": "#/definitions/namespace"
+        }
       }
     },
     "networkPolicies": {
       "type": "object",
-      "required": ["enabled", "dns", "traefik", "pgadmin", "pgbouncer", "postgres"],
+      "required": [
+        "enabled",
+        "dns",
+        "traefik",
+        "pgadmin",
+        "pgbouncer",
+        "postgres",
+        "postgresSetup"
+      ],
       "properties": {
-        "enabled": { "type": "boolean" },
+        "enabled": {
+          "type": "boolean"
+        },
         "dns": {
           "type": "object",
-          "required": ["namespace", "podSelector"],
+          "required": [
+            "namespace",
+            "podSelector"
+          ],
           "properties": {
-            "namespace": { "type": "string", "minLength": 1 },
-            "podSelector": { "$ref": "#/definitions/labelSelector" }
+            "namespace": {
+              "type": "string",
+              "minLength": 1
+            },
+            "podSelector": {
+              "$ref": "#/definitions/labelSelector"
+            }
           },
           "additionalProperties": false
         },
         "traefik": {
           "type": "object",
-          "required": ["podSelector", "ports"],
+          "required": [
+            "podSelector",
+            "ports"
+          ],
           "properties": {
-            "podSelector": { "$ref": "#/definitions/labelSelector" },
+            "podSelector": {
+              "$ref": "#/definitions/labelSelector"
+            },
             "ports": {
               "type": "array",
               "minItems": 1,
-              "items": { "type": "integer", "minimum": 1, "maximum": 65535 }
+              "items": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "pattern": "^[a-z0-9-]+$",
+                "minimum": 1,
+                "maximum": 65535
+              }
             }
           },
           "additionalProperties": false
         },
-        "pgadmin": { "$ref": "#/definitions/workloadSelector" },
-        "pgbouncer": { "$ref": "#/definitions/workloadSelector" },
-        "postgres": { "$ref": "#/definitions/workloadSelector" }
+        "pgadmin": {
+          "$ref": "#/definitions/workloadSelector"
+        },
+        "pgbouncer": {
+          "$ref": "#/definitions/workloadSelector"
+        },
+        "postgres": {
+          "$ref": "#/definitions/workloadSelector"
+        },
+        "postgresSetup": {
+          "$ref": "#/definitions/workloadSelector"
+        }
       },
       "additionalProperties": false
     },
     "storageClass": {
       "type": "object",
-      "required": ["enabled", "name", "provisioner", "reclaimPolicy", "volumeBindingMode"],
+      "required": [
+        "enabled",
+        "name",
+        "provisioner",
+        "reclaimPolicy",
+        "volumeBindingMode"
+      ],
       "properties": {
-        "enabled": { "type": "boolean" },
-        "name": { "type": "string", "minLength": 1 },
-        "provisioner": { "type": "string", "minLength": 1 },
-        "reclaimPolicy": { "type": "string", "enum": ["Delete", "Retain", "Recycle"] },
-        "volumeBindingMode": { "type": "string", "enum": ["Immediate", "WaitForFirstConsumer"] }
+        "enabled": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provisioner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reclaimPolicy": {
+          "type": "string",
+          "enum": [
+            "Delete",
+            "Retain",
+            "Recycle"
+          ]
+        },
+        "volumeBindingMode": {
+          "type": "string",
+          "enum": [
+            "Immediate",
+            "WaitForFirstConsumer"
+          ]
+        }
       },
       "additionalProperties": false
     }
@@ -80,7 +171,12 @@
   "definitions": {
     "namespace": {
       "type": "object",
-      "required": ["name", "purpose", "podSecurityEnforce", "enabled"],
+      "required": [
+        "name",
+        "purpose",
+        "podSecurityEnforce",
+        "enabled"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -88,22 +184,41 @@
           "maxLength": 63,
           "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
         },
-        "purpose": { "type": "string", "minLength": 1 },
-        "podSecurityEnforce": { "type": "string", "enum": ["privileged", "baseline", "restricted"] },
-        "enabled": { "type": "boolean" }
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "podSecurityEnforce": {
+          "type": "string",
+          "enum": [
+            "privileged",
+            "baseline",
+            "restricted"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        }
       },
       "additionalProperties": false
     },
     "labelSelector": {
       "type": "object",
       "minProperties": 1,
-      "additionalProperties": { "type": "string", "minLength": 1 }
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
     },
     "workloadSelector": {
       "type": "object",
-      "required": ["podSelector"],
+      "required": [
+        "podSelector"
+      ],
       "properties": {
-        "podSelector": { "$ref": "#/definitions/labelSelector" }
+        "podSelector": {
+          "$ref": "#/definitions/labelSelector"
+        }
       },
       "additionalProperties": false
     }

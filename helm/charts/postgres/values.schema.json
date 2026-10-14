@@ -8,13 +8,23 @@
     "defaultEnv",
     "env",
     "defaultSecrets",
-    "secrets"
+    "secrets",
+    "podSecurityContext",
+    "securityContext",
+    "roles",
+    "databases"
   ],
   "properties": {
     "replicaCount": {
       "type": "integer",
       "minimum": 1,
       "maximum": 1
+    },
+    "podSecurityContext": {
+      "type": "object"
+    },
+    "securityContext": {
+      "type": "object"
     },
     "probes": {
       "type": "object",
@@ -497,8 +507,7 @@
       "additionalProperties": {
         "type": "object",
         "required": [
-          "name",
-          "env"
+          "name"
         ],
         "properties": {
           "name": {
@@ -519,9 +528,33 @@
               "minLength": 1,
               "pattern": "^[-._a-zA-Z0-9]+$"
             }
+          },
+          "mountPath": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[-._a-zA-Z0-9]+$"
+            }
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "anyOf": [
+          {
+            "required": [
+              "env"
+            ]
+          },
+          {
+            "required": [
+              "mountPath"
+            ]
+          }
+        ]
       },
       "properties": {
         "credentials": {
@@ -554,10 +587,26 @@
                 "POSTGRES_USER",
                 "POSTGRES_PASSWORD"
               ]
+            },
+            "mountPath": {
+              "type": "string",
+              "pattern": "^/"
+            },
+            "keys": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[-._a-zA-Z0-9]+$"
+              }
             }
           },
           "additionalProperties": false
         }
+      },
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
       }
     },
     "secrets": {
@@ -582,6 +631,100 @@
               "minLength": 1,
               "pattern": "^[-._a-zA-Z0-9]+$"
             }
+          },
+          "mountPath": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[-._a-zA-Z0-9]+$"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*$"
+      }
+    },
+    "roles": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "name",
+          "options",
+          "passwordSecret"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z_][a-z0-9_-]{0,62}$"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "LOGIN",
+                "NOLOGIN",
+                "CREATEDB",
+                "NOCREATEDB",
+                "CREATEROLE",
+                "NOCREATEROLE",
+                "INHERIT",
+                "NOINHERIT",
+                "REPLICATION",
+                "NOREPLICATION",
+                "BYPASSRLS",
+                "NOBYPASSRLS"
+              ]
+            }
+          },
+          "passwordSecret": {
+            "type": "object",
+            "required": [
+              "name",
+              "key"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "key": {
+                "type": "string",
+                "pattern": "^[-._a-zA-Z0-9]+$"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "databases": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z_][a-z0-9_-]{0,62}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "owner"
+        ],
+        "properties": {
+          "owner": {
+            "type": "string",
+            "pattern": "^[a-z_][a-z0-9_-]{0,62}$"
           }
         },
         "additionalProperties": false

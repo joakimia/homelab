@@ -39,6 +39,10 @@ spec:
       labels:
         app.kubernetes.io/name: {{ .Values.name }}
     spec:
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Values.name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -48,6 +52,14 @@ spec:
               containerPort: {{ .Values.service.containerPort }}
           {{- with include "homelab.containerEnv" . | trim }}
           env:
+            {{- . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with include "homelab.secretVolumeMounts" . | trim }}
+          volumeMounts:
             {{- . | nindent 12 }}
           {{- end }}
           {{- with .Values.probes.startup }}
@@ -64,3 +76,7 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      {{- with include "homelab.secretVolumes" . | trim }}
+      volumes:
+        {{- . | nindent 8 }}
+      {{- end }}

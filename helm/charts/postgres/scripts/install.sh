@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 # Installs or upgrades the PostgreSQL release.
-# Creates postgres-credentials if missing: each value comes from $<KEY>, else a
-# prompt in a terminal (Enter = default or generated), else the default.
+# Creates postgres-credentials (superuser) and postgres-admin (password for roles.admin) if
+# missing: each value comes from $<KEY>, else a prompt in a terminal (Enter = default or
+# generated), else the default. A generated admin password is printed once.
 # Extra arguments are passed to helm upgrade, for example --values <profile overlay>.
 set -euo pipefail
 export LC_ALL=C  # English messages from bash and tools, whatever the local language
 
 chart_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 namespace=hlab-database
-# Must match defaultSecrets.credentials.name in values.yaml.
+# Must match defaultSecrets.credentials.name and roles.admin in values.yaml.
 secret_name=postgres-credentials
+admin_secret_name=postgres-admin
+admin_user=homelab-admin
 
 # Prints $<key>, else typed input (hidden with "hidden"), else the default. Prompts go to stderr.
 secret_value() {
@@ -47,6 +50,23 @@ create_secret() {
   echo "Created $secret_name (user: $user, database: $database). Read the password with kubectl, see the README."
 }
 
+# Creates the admin role's password Secret if it is missing; the setup Job sets the password.
+create_admin_secret() {
+  local password generated
+  if kubectl get secret "$admin_secret_name" -n "$namespace" >/dev/null 2>&1; then
+    echo "Reusing the $admin_secret_name Secret."
+    return 0
+  fi
+  generated="$(openssl rand -hex 24)"
+  password="$(secret_value POSTGRES_ADMIN_PASSWORD "PostgreSQL $admin_user password" "$generated" hidden)"
+  kubectl create secret generic "$admin_secret_name" -n "$namespace" --from-literal=PASSWORD="$password" >/dev/null
+  if [[ "$password" == "$generated" ]]; then
+    echo "Created $admin_secret_name. Login for pgAdmin: $admin_user / $password"
+  else
+    echo "Created $admin_secret_name. Login for pgAdmin: $admin_user with the password you chose."
+  fi
+}
+
 for command in helm kubectl openssl; do
   command -v "$command" >/dev/null || { echo "Required command not found: $command" >&2; exit 1; }
 done
@@ -54,4 +74,5 @@ done
 kubectl get namespace "$namespace" >/dev/null || { echo "Namespace $namespace is missing; install the platform chart first." >&2; exit 1; }
 
 create_secret
+create_admin_secret
 helm upgrade --install postgres "$chart_dir" --namespace "$namespace" "$@"

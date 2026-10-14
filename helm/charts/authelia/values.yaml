@@ -1,0 +1,115 @@
+namespace: hlab-platform
+
+name: authelia
+
+host: auth.homelab.com
+
+image:
+  repository: authelia/authelia
+  tag: 4.39.28
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+
+probes:
+  startup:
+    httpGet:
+      path: /api/health
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 12
+  readiness:
+    httpGet:
+      path: /api/health
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  liveness:
+    httpGet:
+      path: /api/health
+      port: http
+    initialDelaySeconds: 0
+    periodSeconds: 20
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+service:
+  port: 9091
+  containerPort: 9091
+
+ingress:
+  className: traefik
+  # Certificate for host from cert-manager (needs the cert-manager and cert-issuers charts).
+  tls:
+    enabled: true
+    clusterIssuer: homelab-ca
+  # Never on for the portal itself.
+  auth:
+    enabled: false
+    middleware: authelia@file
+
+# SQLite database and the notification file (password reset links, no e-mail).
+storage:
+  size: 256Mi
+  storageClassName: homelab-pvc-storage
+
+# Written to configuration.yml.
+config:
+  session:
+    # Parent domain of every protected host; the login cookie is set for it.
+    domain: homelab.com
+    autheliaUrl: https://auth.homelab.com:8443
+    defaultRedirectionUrl: https://homepage.homelab.com:8443/
+  accessControl:
+    defaultPolicy: deny
+    rules:
+      - domain: "*.homelab.com"
+        policy: one_factor
+
+
+# Authelia reads each secret from the file named in its *_FILE variable.
+defaultEnv:
+  AUTHELIA_LOG_LEVEL: info
+  # The Docker healthcheck file cannot be written on a read-only root filesystem.
+  AUTHELIA_SERVER_DISABLE_HEALTHCHECK: true
+  AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /secrets/JWT_SECRET
+  AUTHELIA_SESSION_SECRET_FILE: /secrets/SESSION_SECRET
+  AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /secrets/STORAGE_ENCRYPTION_KEY
+
+env: {} # Override defaultEnv or add additional environment variables as needed
+
+defaultSecrets:
+  authelia:
+    name: authelia
+    mountPath: /secrets
+    keys:
+      - JWT_SECRET
+      - SESSION_SECRET
+      - STORAGE_ENCRYPTION_KEY
+      - users_database.yml
+
+secrets: {} # Override defaultSecrets or add additional secrets as needed

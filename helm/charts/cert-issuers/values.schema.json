@@ -4,10 +4,20 @@
   "required": [
     "namespace",
     "clusterIssuer",
-    "defaultSecrets"
+    "defaultSecrets",
+    "name",
+    "defaultEnv",
+    "env",
+    "secrets"
   ],
   "properties": {
     "namespace": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 63,
+      "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+    },
+    "name": {
       "type": "string",
       "minLength": 1,
       "maxLength": 63,
@@ -51,6 +61,50 @@
                 "certificate",
                 "privateKey"
               ],
+              "properties": {
+                "certificate": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^[-._a-zA-Z0-9]+$"
+                },
+                "privateKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^[-._a-zA-Z0-9]+$"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "defaultEnv": {
+      "type": "object",
+      "maxProperties": 0,
+      "description": "No pod in this chart; kept for the shared value layout."
+    },
+    "env": {
+      "type": "object",
+      "maxProperties": 0,
+      "description": "No pod in this chart; kept for the shared value layout."
+    },
+    "secrets": {
+      "type": "object",
+      "properties": {
+        "ca": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253,
+              "pattern": "^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$"
+            },
+            "keys": {
+              "type": "object",
               "properties": {
                 "certificate": {
                   "type": "string",

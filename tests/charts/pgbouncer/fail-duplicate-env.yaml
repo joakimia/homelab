@@ -1,0 +1,3 @@
+# expect: DB_USER is set twice
+env:
+  DB_USER: plain

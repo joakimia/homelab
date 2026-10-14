@@ -12,6 +12,7 @@ All charts the homelab can use. A cluster profile in `../deployment/<env>/<clust
 | [`pgbouncer`](pgbouncer/README.md) | `hlab-database` | Connection pool on 6432. |
 | [`pgadmin`](pgadmin/README.md) | `hlab-frontend-apps` | pgAdmin on 5050, `https://pgadmin.homelab.com:8443/`. |
 | [`homepage`](homepage/README.md) | `hlab-frontend-apps` | Caddy page, `https://homepage.homelab.com:8443/`. |
+| [`authelia`](authelia/README.md) | `hlab-platform` | Login portal, `https://auth.homelab.com:8443/` (MicroK8s profile only). |
 
 The [RKE2 development profile](../deployment/dev/homelab-rke2-cluster-dev/README.md) (work in progress) deploys the same charts plus:
 

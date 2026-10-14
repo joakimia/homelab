@@ -1,0 +1,9 @@
+apiVersion: v2
+name: authelia
+description: Authelia login portal and single sign-on for the homelab.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 4.39.28

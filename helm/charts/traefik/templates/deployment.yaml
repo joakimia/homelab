@@ -26,6 +26,7 @@
 {{- $_ := required "resources are required" .Values.resources -}}
 {{- $_ := required "ingress settings are required" .Values.ingress -}}
 {{- $_ := required "ingress.className is required" .Values.ingress.className -}}
+{{- $_ := required "forwardAuth settings are required" .Values.forwardAuth -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -47,10 +48,11 @@ spec:
     metadata:
       labels:
         {{- include "traefik.selectorLabels" . | nindent 8 }}
-      {{- with .Values.podAnnotations }}
       annotations:
+        checksum/dynamic: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "traefik.fullname" . }}
       automountServiceAccountToken: true
@@ -61,6 +63,10 @@ spec:
       {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
@@ -78,6 +84,10 @@ spec:
             # TLS on websecure for every route; certificate from the Ingress spec.tls Secret.
             - --entrypoints.websecure.http.tls=true
             - --entrypoints.traefik.address=:{{ .Values.ports.traefik.containerPort }}
+            {{- if .Values.forwardAuth.enabled }}
+            - --providers.file.directory=/etc/traefik/dynamic
+            - --providers.file.watch=true
+            {{- end }}
             - --ping=true
             - --ping.entrypoint=traefik
             - --accesslog=true
@@ -98,16 +108,18 @@ spec:
             - name: traefik
               containerPort: {{ .Values.ports.traefik.containerPort }}
               protocol: TCP
+          {{- with .Values.securityContext }}
           securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: [ALL]
-            readOnlyRootFilesystem: true
-            runAsNonRoot: true
-            runAsUser: 65532
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - name: tmp
               mountPath: /tmp
+            {{- if .Values.forwardAuth.enabled }}
+            - name: dynamic
+              mountPath: /etc/traefik/dynamic
+              readOnly: true
+            {{- end }}
           {{- with .Values.probes.startup }}
           startupProbe:
             {{- toYaml . | nindent 12 }}
@@ -125,3 +137,8 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        {{- if .Values.forwardAuth.enabled }}
+        - name: dynamic
+          configMap:
+            name: {{ include "traefik.fullname" . }}-dynamic
+        {{- end }}

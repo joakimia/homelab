@@ -1,0 +1,24 @@
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "forwardAuth settings are required" .Values.forwardAuth -}}
+{{- if .Values.forwardAuth.enabled -}}
+{{- $_ := required "forwardAuth.address is required" .Values.forwardAuth.address -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "traefik.fullname" . }}-dynamic
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "traefik.labels" . | nindent 4 }}
+data:
+  # Read by the file provider; middlewares here are referenced as <name>@file.
+  middlewares.yaml: |
+    http:
+      middlewares:
+        authelia:
+          forwardAuth:
+            address: {{ .Values.forwardAuth.address }}
+            {{- with .Values.forwardAuth.authResponseHeaders }}
+            authResponseHeaders:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+{{- end }}

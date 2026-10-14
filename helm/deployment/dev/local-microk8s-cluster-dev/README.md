@@ -1,6 +1,6 @@
 # UTM MicroK8s development profile
 
-Deploys platform, cert-manager with the `homelab-ca` issuer, Traefik, PostgreSQL, PgBouncer, pgAdmin, and the Caddy homepage to the MicroK8s VM in UTM. The order and Helm flags are in `deploy-set.json`, and the per-chart overrides are in `<chart>/values.yaml`. Every workload runs one replica.
+Deploys platform, cert-manager with the `homelab-ca` issuer, Traefik, PostgreSQL, PgBouncer, pgAdmin, the Caddy homepage, and Authelia to the MicroK8s VM in UTM. The order and Helm flags are in `deploy-set.json`, and the per-chart overrides are in `<chart>/values.yaml`. Every workload runs one replica.
 
 ## Quick start
 
@@ -36,9 +36,11 @@ KUBECONFIG=.local/local-microk8s-cluster-dev.kubeconfig k9s
 | Namespace | Secret | Keys | Created by |
 |---|---|---|---|
 | `hlab-database` | `postgres-credentials` | `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | `postgres` install script; also used by PgBouncer |
+| `hlab-database` | `postgres-admin` | `PASSWORD` | `postgres` install script; password of the `homelab-admin` role |
 | `hlab-frontend-apps` | `pgadmin-credentials` | `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD` | `pgadmin` install script |
+| `hlab-platform` | `authelia` | `JWT_SECRET`, `SESSION_SECRET`, `STORAGE_ENCRYPTION_KEY`, `users_database.yml` | `authelia` install script; prints the admin login once |
 
-In pgAdmin, register the database through PgBouncer: `pgbouncer.hlab-database.svc.cluster.local:6432`, user and database `homelab`. Read the password with:
+In pgAdmin, register PostgreSQL directly: `postgres.hlab-database.svc.cluster.local:5432`, database `homelab`, user `homelab-admin` (password printed by the first postgres install, or in the `postgres-admin` Secret). Apps use PgBouncer (`pgbouncer.hlab-database.svc.cluster.local:6432`). Read the password with:
 
 ```sh
 kubectl get secret postgres-credentials -n hlab-database -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d; echo
@@ -54,9 +56,13 @@ The first `install.sh` creates a local CA in `./.local/homelab-ca/` and trusts i
 kubectl get certificate -A   # READY True; otherwise Traefik serves its self-signed default
 ```
 
+## Login
+
+The homepage and pgAdmin require an Authelia login (`https://auth.homelab.com:8443/`, user printed by the first install) and are HTTPS only. pgAdmin logs you in as the Authelia user.
+
 ## Reach it from the Mac
 
-Traefik listens on host ports **8443** (HTTPS) and 8080 (HTTP); ports 443 and 80 are not used, so URLs include the port. An Ingress hostname does not create DNS. Either use `curl --resolve` as in the quick start, or add `/etc/hosts` entries for `homepage.homelab.com` and `pgadmin.homelab.com` pointing to the VM. The homepage also answers on `http://<VM-IP>:8080/` without a hostname (no certificate for a bare IP).
+Traefik listens on host ports **8443** (HTTPS) and 8080 (HTTP); ports 443 and 80 are not used, so URLs include the port. An Ingress hostname does not create DNS. Either use `curl --resolve` as in the quick start, or add `/etc/hosts` entries for `homepage.homelab.com`, `pgadmin.homelab.com`, and `auth.homelab.com` pointing to the VM. 
 
 UTM Shared Network uses DHCP on `192.168.64.0/24`, with gateway and DNS at `192.168.64.1`, so the VM address can change. Update `/etc/hosts` and rerun `deploy.sh --kubeconfig` when it does. For a fixed address, either:
 

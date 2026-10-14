@@ -25,7 +25,7 @@ usage() {
 }
 
 check_target() {
-  [[ "$1" =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$ ]] || usage
+  [[ "$1" =~ ^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$ ]] || { echo "Invalid SSH target '$1' (expected user@host; is VM_IP set?)" >&2; usage; }
 }
 
 # Copies ~/.kube/config from the VM, points it at the VM address instead of 127.0.0.1, and
@@ -118,7 +118,7 @@ deploy_releases() {
   echo "Certificates (READY True once cert-manager has signed them):"
   kubectl get certificate -A
   echo
-  echo "Point pgadmin.homelab.com and homepage.homelab.com at the VM IP (DNS or /etc/hosts), then open https://homepage.homelab.com:8443/"
+  echo "Point homepage.homelab.com, pgadmin.homelab.com, and auth.homelab.com at the VM IP (DNS or /etc/hosts), then open https://homepage.homelab.com:8443/"
   echo "Without DNS: curl --cacert .local/homelab-ca/ca.crt --resolve homepage.homelab.com:8443:<VM-IP> https://homepage.homelab.com:8443/"
 }
 

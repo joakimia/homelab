@@ -19,12 +19,12 @@ The release lives in the `default` namespace. No Secrets are needed.
 | `namespaces.<key>.name` / `enabled` / `podSecurityEnforce` | Namespace name, whether it is created, and its Pod Security level. |
 | `networkPolicies.enabled` | Turns all NetworkPolicies on or off. |
 | `networkPolicies.<workload>.podSelector` | Labels that must match the workload charts (`app.kubernetes.io/name`). |
-| `networkPolicies.traefik.ports` | Traefik container ports open to outside traffic (default `[8080, 8443]`). |
+| `networkPolicies.traefik.ports` | Traefik container port names open to outside traffic (default `[web, websecure]`). |
 | `storageClass.*` | Optional StorageClass; the UTM MicroK8s profile uses the `microk8s.io/hostpath` provisioner, the RKE2 profile `rancher.io/local-path`. |
 
 Enabled by default: `hlab-networking` (Traefik, `privileged` because of host ports), `hlab-platform` (cert-manager and the CA Secret; no NetworkPolicies, because the API server must reach the webhook), `hlab-frontend-apps` (pgAdmin, homepage) and `hlab-database` (PostgreSQL, PgBouncer). The other namespaces are named but disabled. The RKE2 profile also enables `hlab-storage` (local-path-provisioner, `privileged` because its helper pods mount a `hostPath`); it has no NetworkPolicies, so the provisioner can reach the API server.
 
-The policies deny by default and allow DNS plus the path Traefik → frontend apps → PgBouncer → PostgreSQL. They only take effect when the CNI enforces NetworkPolicy; MicroK8s Calico and RKE2 Canal do. Mac-side DNS for `*.homelab.com` is not handled here.
+The policies deny by default and allow DNS plus the paths Traefik → frontend apps, apps → PgBouncer → PostgreSQL, and pgAdmin → PostgreSQL. They only take effect when the CNI enforces NetworkPolicy; MicroK8s Calico and RKE2 Canal do. Mac-side DNS for `*.homelab.com` is not handled here.
 
 ## Templates
 
