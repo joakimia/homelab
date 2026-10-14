@@ -1,3 +1,4 @@
+{{- $_ := required "name is required" .Values.name -}}
 {{- $_ := required "namespace is required" .Values.namespace -}}
 {{- $_ := required "service settings are required" .Values.service -}}
 {{- $_ := required "service.containerPort is required" .Values.service.containerPort -}}
@@ -5,7 +6,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: homepage-content
+  name: {{ .Values.name }}-content
   namespace: {{ .Values.namespace }}
 data:
   Caddyfile: |

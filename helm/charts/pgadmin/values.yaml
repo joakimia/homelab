@@ -1,8 +1,10 @@
 namespace: hlab-frontend-apps
 
+name: pgadmin
+
 image:
   repository: dpage/pgadmin4
-  tag: "9.17"
+  tag: 9.17
   pullPolicy: IfNotPresent
 
 host: pgadmin.homelab.com
@@ -24,3 +26,6 @@ resources:
   limits:
     cpu: 750m
     memory: 768Mi
+
+ingressClass:
+  name: traefik

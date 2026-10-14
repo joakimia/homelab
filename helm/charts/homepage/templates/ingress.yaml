@@ -1,14 +1,16 @@
+{{- $_ := required "name is required" .Values.name -}}
 {{- $_ := required "namespace is required" .Values.namespace -}}
 {{- $_ := required "host is required" .Values.host -}}
 {{- $_ := required "service settings are required" .Values.service -}}
 {{- $_ := required "service.port is required" .Values.service.port -}}
+{{- $_ := required "ingressClass.name is required" .Values..ingressClass.name -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: homepage
+  name: {{ .Values.name }}
   namespace: {{ .Values.namespace }}
 spec:
-  ingressClassName: traefik
+  ingressClassName: {{ .Values.ingressClass.name }}
   rules:
     - host: {{ .Values.host | quote }}
       http:
@@ -17,7 +19,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: homepage
+                name: {{ .Values.name }}
                 port:
                   number: {{ .Values.service.port }}
     - http:
@@ -26,6 +28,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: homepage
+                name: {{ .Values.name }}
                 port:
                   number: {{ .Values.service.port }}

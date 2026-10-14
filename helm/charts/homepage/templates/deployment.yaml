@@ -1,3 +1,4 @@
+{{- $_ := required "name is required" .Values.name -}}
 {{- $_ := required "namespace is required" .Values.namespace -}}
 {{- $_ := required "replicaCount is required" .Values.replicaCount -}}
 {{- $_ := required "image settings are required" .Values.image -}}
@@ -8,19 +9,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: homepage
+  name: {{ .Values.name }}
   namespace: {{ .Values.namespace }}
   labels:
-    app.kubernetes.io/name: homepage
+    app.kubernetes.io/name: {{ .Values.name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: homepage
+      app.kubernetes.io/name: {{ .Values.name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: homepage
+        app.kubernetes.io/name: {{ .Values.name }}
     spec:
       containers:
         - name: caddy

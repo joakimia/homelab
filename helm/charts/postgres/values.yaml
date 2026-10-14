@@ -1,5 +1,7 @@
 namespace: hlab-database
 
+name: postgres
+
 image:
   repository: postgres
   tag: 17.11-alpine3.24

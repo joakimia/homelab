@@ -1,5 +1,7 @@
 namespace: hlab-database
 
+name: pgbouncer
+
 image:
   repository: edoburu/pgbouncer
   tag: v1.26.0-p0

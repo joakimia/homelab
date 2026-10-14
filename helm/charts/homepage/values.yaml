@@ -1,5 +1,7 @@
 namespace: hlab-frontend-apps
 
+name: homepage
+
 image:
   repository: caddy
   tag: 2.11.6-alpine
@@ -12,6 +14,9 @@ service:
   containerPort: 8080
 
 replicaCount: 1
+
+ingressClass:
+  name: traefik
 
 content: |
   <!doctype html>
