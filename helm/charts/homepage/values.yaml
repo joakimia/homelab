@@ -15,8 +15,8 @@ service:
 
 replicaCount: 1
 
-ingressClass:
-  name: traefik
+ingress:
+  className: traefik
 
 content: |
   <!doctype html>

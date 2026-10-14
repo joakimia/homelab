@@ -1,8 +1,8 @@
-{{- $_ := required "ingressClass.name is required" .Values.ingressClass.name -}}
+{{- $_ := required "ingress.className is required" .Values.ingress.className -}}
 apiVersion: networking.k8s.io/v1
 kind: IngressClass
 metadata:
-  name: {{ .Values.ingressClass.name }}
+  name: {{ .Values.ingress.className }}
   labels:
     {{- include "traefik.labels" . | nindent 4 }}
   {{- if .Values.ingressClass.isDefaultClass }}

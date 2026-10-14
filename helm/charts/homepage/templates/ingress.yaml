@@ -3,14 +3,14 @@
 {{- $_ := required "host is required" .Values.host -}}
 {{- $_ := required "service settings are required" .Values.service -}}
 {{- $_ := required "service.port is required" .Values.service.port -}}
-{{- $_ := required "ingressClass.name is required" .Values..ingressClass.name -}}
+{{- $_ := required "ingress.className is required" .Values.ingress.className -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Values.name }}
   namespace: {{ .Values.namespace }}
 spec:
-  ingressClassName: {{ .Values.ingressClass.name }}
+  ingressClassName: {{ .Values.ingress.className }}
   rules:
     - host: {{ .Values.host | quote }}
       http:

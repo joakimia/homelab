@@ -1,0 +1,17 @@
+namespace: hlab-platform
+
+name: cert-manager
+
+issuerName: local-ca
+
+ca:
+  commonName: Homelab CA
+  duration: 43800h
+
+service:
+  port: 8080
+  containerPort: 8080
+
+ingress:
+  className: traefik
+  host: homepage.homelab.com

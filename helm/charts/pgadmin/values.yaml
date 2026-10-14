@@ -27,5 +27,5 @@ resources:
     cpu: 750m
     memory: 768Mi
 
-ingressClass:
-  name: traefik
+ingress:
+  className: traefik

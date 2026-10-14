@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.name }}
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: {{ .Values.ca.commonName }}
+  secretName: local-ca
+  duration: {{ .Values.ca.duration }}
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-bootstrap
+    kind: ClusterIssuer

@@ -1,11 +1,13 @@
+namespace: hlab-networking
+
+name: traefik
+
 image:
   repository: traefik
   tag: v3.7.14
   pullPolicy: IfNotPresent
 
 nameOverride: ""
-
-namespace: hlab-networking
 
 # Unprivileged ports: HTTP on 8080 and HTTPS on 8443 on the node, the dashboard/ping
 # entrypoint on 9000 inside the pod only.
@@ -19,8 +21,8 @@ ports:
   api:
     containerPort: 9000
 
-ingressClass:
-  name: traefik
+ingress:
+  className: traefik
   isDefaultClass: false
 
 replicaCount: 1
