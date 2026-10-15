@@ -108,6 +108,10 @@ apply_seed() {
   trap "rm -rf '$seed_upload'" EXIT
 
   if ! command -v cloud-init >/dev/null; then
+    # Wipe the stale pre-baked mirror cache from the clean base image
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y cloud-init
   fi
