@@ -8,3 +8,13 @@ homelab-shared-pvc:
   enabled: true
   storageClassName: longhorn
   accessModes: [ReadWriteMany]
+
+# Links to the UIs this profile installs: Longhorn, but no Authelia or Traefik dashboard yet.
+homelab-frontend:
+  links:
+    auth:
+      enabled: false
+    longhorn:
+      enabled: true
+    traefik:
+      enabled: false

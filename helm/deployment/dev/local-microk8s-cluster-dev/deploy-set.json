@@ -6,6 +6,7 @@
     { "chart": "platform" },
     { "chart": "cert-manager" },
     { "chart": "cert-issuers" },
+    { "chart": "longhorn" },
     { "chart": "traefik" },
     { "chart": "postgres" },
     { "chart": "pgbouncer" },

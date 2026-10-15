@@ -1,6 +1,6 @@
 {{- define "platform.validateValues" -}}
 {{- $namespaces := required "namespaces is required" .Values.namespaces -}}
-{{- range $key := list "networking" "frontend" "backendApi" "backgroundWorkers" "database" "filestore" "storage" "platform" "tools" "observability" "observabilityAgents" -}}
+{{- range $key := list "networking" "frontend" "backendApi" "backgroundWorkers" "mqtt" "amqp" "database" "filestore" "storage" "platform" "tools" "observability" "observabilityAgents" -}}
   {{- $namespace := required (printf "namespaces.%s is required" $key) (get $namespaces $key) -}}
   {{- $_ := required (printf "namespaces.%s.name is required" $key) $namespace.name -}}
   {{- $_ := required (printf "namespaces.%s.purpose is required" $key) $namespace.purpose -}}

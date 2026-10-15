@@ -11,7 +11,7 @@ NoCloud seeds that turn a fresh Debian 12 VM into a MicroK8s node for the local 
 
 ## What the seed does
 
-Updates Debian, installs the tools below, adds `debian` to the `microk8s` group, and writes `~/.kube/config`. On the control plane it also enables hostpath storage and metrics-server (`kubectl top`, k9s CPU/MEM columns). On a VM provisioned before that, run `sudo microk8s enable metrics-server` once. The last steps apply the [basic hardening](../README.md#basic-hardening-work-in-progress).
+Updates Debian, installs the tools below, adds `debian` to the `microk8s` group, and writes `~/.kube/config`. On the control plane it also enables hostpath storage and metrics-server (`kubectl top`, k9s CPU/MEM columns). On a VM provisioned before that, run `sudo microk8s enable metrics-server` once. For Longhorn it installs `open-iscsi` and `nfs-common`, loads `iscsi_tcp` (now and at boot), and starts `iscsid`; on an older VM, run the commands under [Longhorn on an existing VM](#longhorn-on-an-existing-vm). The last steps apply the [basic hardening](../README.md#basic-hardening-work-in-progress).
 
 | Tool | Pin |
 |---|---|
@@ -19,7 +19,7 @@ Updates Debian, installs the tools below, adds `debian` to the `microk8s` group,
 | kubectl | snap track `1.36/stable`, same minor as MicroK8s |
 | Helm | `v4.3.0` from `get.helm.sh`, SHA-256 checked |
 | k9s | `v0.51.0` from GitHub, SHA-256 checked |
-| jq, curl | Debian 12 packages |
+| jq, curl, open-iscsi, nfs-common | Debian 12 packages |
 
 To upgrade, change the versions in both `cloud-init.yaml` files. For Helm and k9s, also update the `amd64` and `arm64` checksums from the release.
 
@@ -33,5 +33,18 @@ microk8s status --wait-ready
 kubectl get nodes
 helm version && k9s version
 ```
+
+## Longhorn on an existing VM
+
+A VM provisioned before the seed had the Longhorn prerequisites needs them once:
+
+```sh
+sudo apt-get install -y open-iscsi nfs-common
+echo iscsi_tcp | sudo tee /etc/modules-load.d/longhorn.conf
+sudo modprobe iscsi_tcp
+sudo systemctl enable --now iscsid
+```
+
+Longhorn needs memory too: give the VM at least 8 GB in UTM before deploying it.
 
 Then deploy the charts with the [UTM Helm profile](../../../../../helm/deployment/dev/local-microk8s-cluster-dev/README.md).

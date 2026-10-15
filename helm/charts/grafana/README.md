@@ -11,6 +11,7 @@ Grafana runs as a StatefulSet: its SQLite database (users, dashboards made in th
 - **Nodes**: CPU, memory, filesystems, load, and network per node (node-exporter).
 - **Workloads**: running and not-ready pods, restarts, failed Jobs, CPU and memory per pod, and time since each CronJob last succeeded (kube-state-metrics, cAdvisor).
 - **Logs and events**: pod logs by namespace, app, and text, and Kubernetes events (Loki).
+- **Traefik**: requests, 4xx/5xx, p95 response time per service, open connections, days until a certificate expires, recent traces (Tempo), and the access log (Loki).
 
 ## Install
 
@@ -25,7 +26,7 @@ Installed by the profiles after Prometheus, Loki, and Tempo. Alone: `./scripts/i
 With `ingress.auth.enabled`, turn on `grafana."grafana.ini"."auth.proxy"` so Grafana logs in the Authelia user from the `Remote-User` header (see the MicroK8s overlay):
 
 - `whitelist`: the pod network, so only Traefik can assert the user. Requests with the header from other addresses get 401.
-- New users are created as Viewers. An Authelia user with the Grafana admin's name (`admin` by default for both) logs in as the Grafana admin.
+- New users are created as Editors, so they can use Explore. Existing users keep their role; change it under Administration → Users. An Authelia user with the Grafana admin's name (`admin` by default for both) logs in as the Grafana admin.
 
 The chart fails to render if `auth.proxy` is on without `ingress.auth` (anyone could send the header) or without `whitelist`.
 

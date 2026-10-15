@@ -1,0 +1,4 @@
+# expect: dashboard.auth.enabled needs dashboard.tls.enabled
+dashboard:
+  tls:
+    enabled: false

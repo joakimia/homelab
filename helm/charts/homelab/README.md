@@ -8,7 +8,7 @@ The homelab's own apps in one release, built from the homelab base charts. Each 
 | `homelab-periodic-cleanup` | [`homelab-cron-job`](../homelab-cron-job/README.md) | `hlab-tools` | Daily at 03:30 UTC: deletes leftovers older than 7 days. |
 | `homelab-shared-pvc` | [`homelab-shared-pvc`](../homelab-shared-pvc/README.md) | `hlab-filestore` | Shared claim; off by default, on (Longhorn, `ReadWriteMany`) in the RKE2 profile. |
 
-Files the apps use live in this chart, not in the values: `static-assets/` holds the homepage files (flat names; served within about a minute of an upgrade, without a restart), and `scripts/periodic-cleanup.sh` the cleanup script. `templates/configmap.yaml` puts them in ConfigMaps, which the base charts mount through `filesConfigMap` and `scriptConfigMap`.
+Files the apps use live in this chart, not in the values: `static-assets/` holds the homepage files (flat names; served within about a minute of an upgrade, without a restart; `.html` files are templates, so `index.html` lists the enabled homepage links), and `scripts/periodic-cleanup.sh` the cleanup script. `templates/configmap.yaml` puts them in ConfigMaps, which the base charts mount through `filesConfigMap` and `scriptConfigMap`.
 
 Another app is one more alias of a base chart. Charts that wrap upstream software (Traefik, PostgreSQL, Grafana, …) stay separate releases.
 
@@ -35,6 +35,7 @@ helm uninstall homepage --namespace hlab-frontend-apps
 | Value | Default | Purpose |
 |---|---|---|
 | `homelab-frontend.filesConfigMap` | `homepage-static-assets` | ConfigMap made from `static-assets/`. |
+| `homelab-frontend.links.<id>` | the UIs in both profiles; `longhorn` off | `title`, `url`, `enabled` of each link on the start page; a profile overrides fields by key or adds links. |
 | `homelab-frontend.ingress.catchAll` | `true` | `http://<node-ip>:8080/` opens the homepage too; off with `ingress.auth`. |
 | `homelab-periodic-cleanup.enabled` | `true` | Install the cleanup CronJob. |
 | `homelab-periodic-cleanup.scriptConfigMap` | `periodic-cleanup-script` | ConfigMap made from `scripts/periodic-cleanup.sh`. |

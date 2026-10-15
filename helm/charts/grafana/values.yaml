@@ -56,8 +56,10 @@ grafana:
       headers: Email:Remote-Email Name:Remote-Name
       auto_sign_up: true
       whitelist: ""
+    # Editors can use Explore (free queries over logs, metrics, and traces); Viewers only see
+    # dashboards. Applies when a user is created; change existing users under Administration.
     users:
-      auto_assign_org_role: Viewer
+      auto_assign_org_role: Editor
   # Dashboards from dashboards/*.json, rendered into the ConfigMap named in
   # dashboardsConfigMaps.homelab by templates/configmap.yaml. Change them in Git, not in the UI.
   dashboardProviders:

@@ -3,6 +3,7 @@
 # expect: header_name = Remote-User
 # expect: whitelist = 10.1.0.0/16
 # expect: secretName: grafana-tls
+# expect: auto_assign_org_role = Editor
 ingress:
   auth:
     enabled: true

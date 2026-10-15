@@ -6,7 +6,7 @@ type: application
 
 version: 0.1.0
 
-appVersion: v1.21.2
+appVersion: 1.21.2
 
 # The upstream chart is pulled from its OCI registry by scripts/install.sh (helm dependency build,
 # pinned by Chart.lock). Issuers live in the cert-issuers chart: they need these CRDs to exist first.

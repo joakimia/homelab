@@ -122,7 +122,7 @@ check_seeds() {
 }
 
 check_charts() {
-  local file deploy_set profile_dir chart overlay args output glued
+  local file deploy_set profile_dir chart overlay args output glued rendered host
   echo "==> charts"
   require helm
   require jq
@@ -132,6 +132,7 @@ check_charts() {
 
   while IFS= read -r deploy_set; do
     profile_dir="$(dirname "$deploy_set")"
+    rendered=''
     while IFS= read -r chart; do
       if [[ ! -x "$repo_root/helm/charts/$chart/scripts/install.sh" ]]; then
         fail "${deploy_set#"$repo_root"/}: chart '$chart' has no executable scripts/install.sh"
@@ -153,11 +154,17 @@ check_charts() {
       if output="$(helm template "$chart" "$repo_root/helm/charts/$chart" ${args[@]+"${args[@]}"})"; then
         glued="$(printf '%s\n' "$output" | glued_separators)"
         [[ -z "$glued" ]] || fail "helm template $chart (${profile_dir#"$repo_root"/}): document separator glued to a line: $glued"
+        rendered+="$output"$'\n'
       else
         fail "helm template $chart (${profile_dir#"$repo_root"/})"
       fi
       echo "ok $chart with ${profile_dir#"$repo_root"/}"
     done < <(jq -r '.releases[].chart' "$deploy_set")
+    # Every homepage link must reach an Ingress host the same profile installs.
+    while IFS= read -r host; do
+      grep -qE "^[[:space:]]*- host: \"?$host\"?$" <<<"$rendered" \
+        || fail "${profile_dir#"$repo_root"/}: homepage links to $host, but no Ingress in the profile has that host"
+    done < <(sed -nE 's#.*<a href="https://([^:/"]+).*#\1#p' <<<"$rendered" | sort -u)
   done < <(repo_files 'deploy-set.json')
 }
 

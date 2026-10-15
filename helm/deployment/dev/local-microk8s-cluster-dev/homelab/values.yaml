@@ -8,3 +8,6 @@ homelab-frontend:
     catchAll: false
     auth:
       enabled: true
+  links:
+    longhorn:
+      enabled: true

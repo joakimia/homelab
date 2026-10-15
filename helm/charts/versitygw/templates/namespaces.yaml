@@ -1,0 +1,14 @@
+{{- include "platform.validateValues" . -}}
+{{- range $key, $namespace := .Values.namespaces }}
+{{- if $namespace.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $namespace.name }}
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    homelab.jamundsen.local/tier: {{ $namespace.purpose | quote }}
+    pod-security.kubernetes.io/enforce: {{ $namespace.podSecurityEnforce | quote }}
+---
+{{- end }}
+{{- end }}

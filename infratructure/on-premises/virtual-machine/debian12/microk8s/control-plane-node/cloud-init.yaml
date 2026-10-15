@@ -15,6 +15,15 @@ packages:
   - jq
   - snapd
   - unattended-upgrades
+  # Longhorn: iSCSI for its block devices, NFS for ReadWriteMany volumes.
+  - open-iscsi
+  - nfs-common
+
+write_files:
+  # Longhorn attaches volumes over iSCSI; load the module at every boot.
+  - path: /etc/modules-load.d/longhorn.conf
+    content: |
+      iscsi_tcp
 
 runcmd:
   # Step 1: Enable snapd and wait until it can install snaps
@@ -23,7 +32,13 @@ runcmd:
   - [snap, wait, system, seed.loaded]
 
 
-  # Step 2: Install MicroK8s and kubectl
+  # Step 2: Longhorn prerequisites: load iscsi_tcp now (modules-load.d covers reboots) and run
+  # the iSCSI daemon.
+  - [modprobe, iscsi_tcp]
+  - [systemctl, enable, --now, iscsid]
+
+
+  # Step 3: Install MicroK8s and kubectl
   # Pinned versions. MicroK8s and kubectl follow a minor-version snap track (patch updates
   # arrive through snap refresh); Helm and k9s are exact releases checked against the SHA-256
   # recorded here. To upgrade, change the version and both checksums from the release page.
@@ -31,7 +46,7 @@ runcmd:
   - [snap, install, kubectl, --classic, --channel=1.36/stable]
 
 
-  # Step 3: Install Helm and k9s
+  # Step 4: Install Helm and k9s
   - |
     set -e
     # Set versions and architecture-specific checksums
@@ -66,7 +81,7 @@ runcmd:
     if snap list helm >/dev/null 2>&1; then snap remove helm; fi
 
 
-  # Step 4: Wait for MicroK8s and give the debian user access
+  # Step 5: Wait for MicroK8s and give the debian user access
   - [usermod, -aG, microk8s, debian]
   - [/snap/bin/microk8s, status, --wait-ready]
   - [/snap/bin/microk8s, enable, hostpath-storage]
@@ -74,7 +89,7 @@ runcmd:
   - [/snap/bin/microk8s, enable, metrics-server]
 
 
-  # Step 5: Write the debian user's kubeconfig
+  # Step 6: Write the debian user's kubeconfig
   - [install, -d, -o, debian, -g, debian, -m, '0700', /home/debian/.kube]
   # Point the node's own kubeconfig at 127.0.0.1 so it keeps working when DHCP changes the IP.
   # deploy.sh on the Mac rewrites the server to the address it connects to.
@@ -83,7 +98,7 @@ runcmd:
   - [chmod, '0600', /home/debian/.kube/config]
 
 
-  # Step 6: Basic hardening (work in progress: SSH and security updates only)
+  # Step 7: Basic hardening (work in progress: SSH and security updates only)
   - |
     set -e
     # SSH: no root login, few attempts per connection, no X11 forwarding. Files in
@@ -110,6 +125,6 @@ runcmd:
     printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' > /etc/apt/apt.conf.d/20auto-upgrades
 
 
-  # Step 7: Print the effective hardening settings to /var/log/cloud-init-output.log
+  # Step 8: Print the effective hardening settings to /var/log/cloud-init-output.log
   - [sh, -c, 'sshd -T | grep -E "^(permitrootlogin|maxauthtries|x11forwarding|passwordauthentication|kbdinteractiveauthentication) "']
   - [sh, -c, 'apt-config dump | grep -E "^(APT::Periodic::Unattended-Upgrade|Unattended-Upgrade::Automatic-Reboot|Unattended-Upgrade::Origins-Pattern::) "']

@@ -85,3 +85,63 @@ prometheus:
     enabled: false
   prometheus-pushgateway:
     enabled: false
+  # Alert rules, evaluated by Prometheus and listed in Grafana under Alerting. Without
+  # Alertmanager they only show as pending or firing; nothing is sent anywhere.
+  serverFiles:
+    alerting_rules.yml:
+      groups:
+        - name: homelab-kubernetes
+          rules:
+            - alert: PodCrashLooping
+              expr: max by (namespace, pod, container) (kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}) == 1
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: '{{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) keeps crashing'
+            - alert: PodNotReady
+              expr: sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0
+              for: 15m
+              labels:
+                severity: warning
+              annotations:
+                summary: '{{ $labels.namespace }}/{{ $labels.pod }} has not been running for 15 minutes'
+            - alert: JobFailed
+              expr: kube_job_status_failed > 0
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: 'Job {{ $labels.namespace }}/{{ $labels.job_name }} failed'
+            - alert: ScrapeTargetDown
+              expr: up == 0
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: 'Prometheus cannot scrape {{ $labels.job }} at {{ $labels.instance }}'
+        - name: homelab-node
+          rules:
+            - alert: NodeDiskAlmostFull
+              expr: node_filesystem_avail_bytes{mountpoint="/", fstype!~"tmpfs|overlay|squashfs|nsfs"} / node_filesystem_size_bytes{mountpoint="/", fstype!~"tmpfs|overlay|squashfs|nsfs"} < 0.10
+              for: 10m
+              labels:
+                severity: critical
+              annotations:
+                summary: 'Less than 10% free on / of {{ $labels.node }}'
+            - alert: NodeMemoryHigh
+              expr: 1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes > 0.90
+              for: 15m
+              labels:
+                severity: warning
+              annotations:
+                summary: 'Memory on {{ $labels.node }} is over 90% used'
+        - name: homelab-traefik
+          rules:
+            - alert: TraefikHighErrorRate
+              expr: sum by (service) (rate(traefik_service_requests_total{code=~"5.."}[5m])) / sum by (service) (rate(traefik_service_requests_total[5m])) > 0.05
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: 'Over 5% of requests to {{ $labels.service }} fail with 5xx'

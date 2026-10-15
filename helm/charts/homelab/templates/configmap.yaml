@@ -14,7 +14,15 @@ metadata:
   labels:
     app.kubernetes.io/name: {{ $homepage.name }}
 data:
-  {{- (.Files.Glob "static-assets/*").AsConfig | nindent 2 }}
+  {{- range $path, $_ := .Files.Glob "static-assets/*" }}
+  {{ base $path }}: |
+    {{- /* HTML files are templates (the homepage links); other files are copied as they are. */}}
+    {{- if hasSuffix ".html" $path }}
+    {{- tpl ($.Files.Get $path) $ | nindent 4 }}
+    {{- else }}
+    {{- $.Files.Get $path | nindent 4 }}
+    {{- end }}
+  {{- end }}
 {{- if $cleanup.enabled }}
 ---
 apiVersion: v1

@@ -12,6 +12,33 @@ homelab-frontend:
     catchAll: true
   # Created by templates/configmap.yaml from static-assets/.
   filesConfigMap: homepage-static-assets
+  # Links on the start page (static-assets/index.html), in key order. A profile turns one off
+  # with <id>.enabled: false, or adds one with title, url, and enabled.
+  links:
+    auth:
+      title: Auth provider
+      url: https://auth.homelab.com:8443
+      enabled: true
+    grafana:
+      title: Grafana
+      url: https://grafana.homelab.com:8443
+      enabled: true
+    longhorn:
+      title: Longhorn
+      url: https://longhorn.homelab.com:8443
+      enabled: false
+    pgadmin:
+      title: pgAdmin
+      url: https://pgadmin.homelab.com:8443
+      enabled: true
+    prometheus:
+      title: Prometheus
+      url: https://prometheus.homelab.com:8443
+      enabled: true
+    traefik:
+      title: Traefik dashboard
+      url: https://traefik.homelab.com:8443
+      enabled: true
 
 homelab-backend-for-frontend:
   enabled: false

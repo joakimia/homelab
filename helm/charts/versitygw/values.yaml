@@ -1,0 +1,127 @@
+# Namespace names reflect the intended workload boundaries. Keep future
+# namespaces disabled until a chart or workload is ready to use them.
+namespaces:
+  networking:
+    name: hlab-networking
+    purpose: networking
+    podSecurityEnforce: privileged
+    enabled: true
+  # cert-manager. No NetworkPolicies: the API server must reach its webhook.
+  platform:
+    name: hlab-platform
+    purpose: platform
+    podSecurityEnforce: baseline
+    enabled: true
+  # Prometheus, Loki, Tempo, Alloy, Grafana. Baseline; node-exporter has its own namespace.
+  observability:
+    name: hlab-observability
+    purpose: observability
+    podSecurityEnforce: baseline
+    enabled: true
+  # node-exporter (host network, PID, and filesystem). No NetworkPolicies: host-network pods
+  # are not subject to them.
+  observabilityAgents:
+    name: hlab-observability-agents
+    purpose: observability-agents
+    podSecurityEnforce: privileged
+    enabled: true
+  frontend:
+    name: hlab-frontend-apps
+    purpose: frontend
+    podSecurityEnforce: baseline
+    enabled: true
+  backendApi:
+    name: hlab-backend-api-apps
+    purpose: backend-api
+    podSecurityEnforce: baseline
+    enabled: false
+  backgroundWorkers:
+    name: hlab-backend-background-worker-apps
+    purpose: background-workers
+    podSecurityEnforce: baseline
+    enabled: false
+  mqtt:
+    name: hlab-mqtt
+    purpose: mqtt
+    podSecurityEnforce: baseline
+    enabled: false
+  amqp:
+    name: hlab-amqp
+    purpose: amqp
+    podSecurityEnforce: baseline
+    enabled: false
+  database:
+    name: hlab-database
+    purpose: database
+    podSecurityEnforce: baseline
+    enabled: true
+  filestore:
+    name: hlab-filestore
+    purpose: filestore
+    podSecurityEnforce: baseline
+    enabled: false
+  # Privileged: local-path-provisioner helper pods mount the node folder (hostPath).
+  storage:
+    name: hlab-storage
+    purpose: storage
+    podSecurityEnforce: privileged
+    enabled: false
+  # Scheduled jobs (homelab periodic-cleanup). No NetworkPolicies: they talk to the API server.
+  tools:
+    name: hlab-tools
+    purpose: tools
+    podSecurityEnforce: baseline
+    enabled: true
+
+networkPolicies:
+  enabled: true
+  dns:
+    namespace: kube-system
+    podSelector:
+      k8s-app: kube-dns
+  traefik:
+    podSelector:
+      app.kubernetes.io/name: traefik
+    # Traefik container port names open to outside traffic.
+    ports: [web, websecure]
+  pgadmin:
+    podSelector:
+      app.kubernetes.io/name: pgadmin
+  pgbouncer:
+    podSelector:
+      app.kubernetes.io/name: pgbouncer
+  postgres:
+    podSelector:
+      app.kubernetes.io/name: postgres
+  # The postgres chart's setup Job (roles and databases).
+  postgresSetup:
+    podSelector:
+      app.kubernetes.io/name: postgres-setup
+  grafana:
+    podSelector:
+      app.kubernetes.io/name: grafana
+  # The Prometheus server, not kube-state-metrics.
+  prometheus:
+    podSelector:
+      app.kubernetes.io/name: prometheus
+      app.kubernetes.io/component: server
+  loki:
+    podSelector:
+      app.kubernetes.io/name: loki
+  tempo:
+    podSelector:
+      app.kubernetes.io/name: tempo
+  alloy:
+    podSelector:
+      app.kubernetes.io/name: alloy
+    # Alloy container port names open to OTLP from every namespace.
+    otlpPorts: [otlp-grpc, otlp-http]
+
+# Environment profiles can provide a cluster-specific provisioner behind a
+# stable storage class name used by application charts.
+storageClass:
+  enabled: false
+  name: homelab-pvc-storage
+  provisioner: microk8s.io/hostpath
+  reclaimPolicy: Delete
+  volumeBindingMode: WaitForFirstConsumer

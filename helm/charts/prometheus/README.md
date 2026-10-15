@@ -30,7 +30,11 @@ Upstream values go under `prometheus:` ([reference](https://github.com/prometheu
 
 node-exporter (node disk, filesystem, memory, network) runs as a DaemonSet in `hlab-observability-agents`: it needs `hostNetwork`, `hostPID`, and `hostPath`, which the `baseline` level of `hlab-observability` forbids, so the schema requires `namespaceOverride` to point elsewhere. Alertmanager and Pushgateway are off.
 
-Prometheus can only scrape pods in other namespaces when their NetworkPolicies allow it; the homelab policies do not yet.
+## Alerts
+
+`prometheus.serverFiles.alerting_rules.yml` holds a few basic rules: a pod crash-looping or not running, a failed Job, a scrape target down, the node's root filesystem under 10% free or memory over 90% used, and over 5% 5xx responses on a Traefik service. Grafana lists them under Alerting → Alert rules. Without Alertmanager they only show as pending or firing; no notifications are sent.
+
+Prometheus can only scrape pods in other namespaces when their NetworkPolicies allow it; the platform chart allows it for Traefik only so far.
 
 ## Templates
 

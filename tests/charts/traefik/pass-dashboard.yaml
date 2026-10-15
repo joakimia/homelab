@@ -1,0 +1,8 @@
+# The default dashboard: behind Authelia, HTTPS only, / redirects to /dashboard/.
+# expect: - --api.dashboard=true
+# expect: name: traefik-dashboard
+# expect: host: "traefik.homelab.com"
+# expect: secretName: traefik-dashboard-tls
+# expect: traefik.ingress.kubernetes.io/router.middlewares: authelia@file,dashboard-redirect@file
+# expect: traefik.ingress.kubernetes.io/router.entrypoints: websecure
+# expect: replacement: ${1}/dashboard/

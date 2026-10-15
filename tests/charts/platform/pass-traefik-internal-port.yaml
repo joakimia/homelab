@@ -1,0 +1,4 @@
+# Traefik's port 9000: open to Traefik itself (dashboard) and Prometheus (metrics).
+# expect: name: allow-traefik-internal-port
+# expect: kubernetes.io/metadata.name: hlab-observability
+# expect: port: traefik

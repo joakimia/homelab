@@ -40,6 +40,16 @@ namespaces:
     purpose: background-workers
     podSecurityEnforce: baseline
     enabled: false
+  mqtt:
+    name: hlab-mqtt
+    purpose: mqtt
+    podSecurityEnforce: baseline
+    enabled: false
+  amqp:
+    name: hlab-amqp
+    purpose: amqp
+    podSecurityEnforce: baseline
+    enabled: false
   database:
     name: hlab-database
     purpose: database
@@ -74,6 +84,8 @@ networkPolicies:
       app.kubernetes.io/name: traefik
     # Traefik container port names open to outside traffic.
     ports: [web, websecure]
+    # Port name for the dashboard, API, and metrics; open to Traefik itself and Prometheus.
+    internalPort: traefik
   pgadmin:
     podSelector:
       app.kubernetes.io/name: pgadmin

@@ -1,10 +1,11 @@
 # UTM MicroK8s development profile
 
-Deploys platform, cert-manager with the `homelab-ca` issuer, Traefik, PostgreSQL, PgBouncer, pgAdmin, the `homelab` chart (Caddy homepage and a daily cleanup job), Authelia, and the observability stack (Prometheus, Loki, Tempo, Alloy, Grafana) to the MicroK8s VM in UTM. The order and Helm flags are in `deploy-set.json`, and the per-chart overrides are in `<chart>/values.yaml`. Every workload runs one replica.
+Deploys platform, cert-manager with the `homelab-ca` issuer, Longhorn (single node, for learning; the `longhorn` StorageClass is opt-in and `homelab-pvc-storage` stays on hostpath), Traefik, PostgreSQL, PgBouncer, pgAdmin, the `homelab` chart (Caddy homepage and a daily cleanup job), Authelia, and the observability stack (Prometheus, Loki, Tempo, Alloy, Grafana) to the MicroK8s VM in UTM. The order and Helm flags are in `deploy-set.json`, and the per-chart overrides are in `<chart>/values.yaml`. Every workload runs one replica.
 
 Before deploying, on a VM provisioned earlier:
 
 - Give it 8 GiB of memory: the observability charts request about 1 GiB, with limits of about 4.3 GiB.
+- Install the Longhorn prerequisites (`open-iscsi`, `nfs-common`, `iscsid`); see the [MicroK8s seed README](../../../../infratructure/on-premises/virtual-machine/debian12/microk8s/README.md#longhorn-on-an-existing-vm).
 - Run `sudo microk8s enable metrics-server` on the VM, for `kubectl top` and the CPU/MEM columns in k9s (newer seeds do this).
 - Remove the old `homepage` release if it exists (`helm uninstall homepage -n hlab-frontend-apps`); see the [homelab chart](../../../charts/homelab/README.md).
 

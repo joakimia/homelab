@@ -1,0 +1,9 @@
+# The MicroK8s overlay: the snap's kubelet path for the CSI driver, and the UI behind Authelia.
+# expect: value: /var/snap/microk8s/common/var/lib/kubelet
+# expect: traefik.ingress.kubernetes.io/router.middlewares: authelia@file
+ingress:
+  auth:
+    enabled: true
+longhorn:
+  csi:
+    kubeletRootDir: /var/snap/microk8s/common/var/lib/kubelet

@@ -14,6 +14,8 @@
         "frontend",
         "backendApi",
         "backgroundWorkers",
+        "mqtt",
+        "amqp",
         "database",
         "filestore",
         "storage",
@@ -34,6 +36,12 @@
           "$ref": "#/definitions/namespace"
         },
         "backgroundWorkers": {
+          "$ref": "#/definitions/namespace"
+        },
+        "mqtt": {
+          "$ref": "#/definitions/namespace"
+        },
+        "amqp": {
           "$ref": "#/definitions/namespace"
         },
         "database": {
@@ -100,7 +108,8 @@
           "type": "object",
           "required": [
             "podSelector",
-            "ports"
+            "ports",
+            "internalPort"
           ],
           "properties": {
             "podSelector": {
@@ -118,6 +127,15 @@
                 "minimum": 1,
                 "maximum": 65535
               }
+            },
+            "internalPort": {
+              "type": [
+                "string",
+                "integer"
+              ],
+              "pattern": "^[a-z0-9-]+$",
+              "minimum": 1,
+              "maximum": 65535
             }
           },
           "additionalProperties": false

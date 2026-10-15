@@ -4,6 +4,10 @@
 {{- $_ := required "service.ports settings are required" .Values.service.ports -}}
 {{- $_ := required "service.ports.web is required" .Values.service.ports.web -}}
 {{- $_ := required "service.ports.websecure is required" .Values.service.ports.websecure -}}
+{{- $_ := required "dashboard settings are required" .Values.dashboard -}}
+{{- if .Values.dashboard.enabled }}
+{{- $_ := required "service.ports.traefik is required when dashboard.enabled is true" .Values.service.ports.traefik -}}
+{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -24,3 +28,9 @@ spec:
       port: {{ .Values.service.ports.websecure }}
       targetPort: websecure
       protocol: TCP
+    {{- if .Values.dashboard.enabled }}
+    - name: traefik
+      port: {{ .Values.service.ports.traefik }}
+      targetPort: traefik
+      protocol: TCP
+    {{- end }}

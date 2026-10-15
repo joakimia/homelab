@@ -1,0 +1,17 @@
+{{- $storageClass := required "storageClass is required" .Values.storageClass -}}
+{{- if not (hasKey $storageClass "enabled") -}}
+  {{- fail "storageClass.enabled is required" -}}
+{{- end -}}
+{{- if $storageClass.enabled }}
+{{- $name := required "storageClass.name is required" $storageClass.name -}}
+{{- $provisioner := required "storageClass.provisioner is required" $storageClass.provisioner -}}
+{{- $reclaimPolicy := required "storageClass.reclaimPolicy is required" $storageClass.reclaimPolicy -}}
+{{- $volumeBindingMode := required "storageClass.volumeBindingMode is required" $storageClass.volumeBindingMode -}}
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ $name }}
+provisioner: {{ $provisioner }}
+reclaimPolicy: {{ $reclaimPolicy }}
+volumeBindingMode: {{ $volumeBindingMode }}
+{{- end }}

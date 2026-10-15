@@ -1,3 +1,7 @@
 # Optional environment specific override values for the homelab RKE2 cluster goes here
 # If no override values are needed, this file can be left empty.
 # It must be defined however, if you want to deploy the chart in this environment.
+
+# No Authelia in this profile yet, so no dashboard (it has no login of its own).
+dashboard:
+  enabled: false

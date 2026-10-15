@@ -1,0 +1,60 @@
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "dashboard settings are required" .Values.dashboard -}}
+{{- if .Values.dashboard.enabled -}}
+{{- $_ := required "dashboard.host is required when dashboard.enabled is true" .Values.dashboard.host -}}
+{{- $_ := required "ingress settings are required" .Values.ingress -}}
+{{- $_ := required "ingress.className is required" .Values.ingress.className -}}
+{{- $_ := required "service settings are required" .Values.service -}}
+{{- $_ := required "service.ports settings are required" .Values.service.ports -}}
+{{- $_ := required "service.ports.traefik is required when dashboard.enabled is true" .Values.service.ports.traefik -}}
+{{- $_ := required "dashboard.tls settings are required" .Values.dashboard.tls -}}
+{{- if .Values.dashboard.tls.enabled }}
+{{- $_ := required "dashboard.tls.clusterIssuer is required when dashboard.tls.enabled is true" .Values.dashboard.tls.clusterIssuer -}}
+{{- end }}
+{{- $_ := required "dashboard.auth settings are required" .Values.dashboard.auth -}}
+{{- if .Values.dashboard.auth.enabled }}
+{{- $_ := required "dashboard.auth.middleware is required when dashboard.auth.enabled is true" .Values.dashboard.auth.middleware -}}
+{{- if not .Values.dashboard.tls.enabled }}
+{{- fail "dashboard.auth.enabled needs dashboard.tls.enabled: the login cookie only works over HTTPS" -}}
+{{- end }}
+{{- if and (eq .Values.dashboard.auth.middleware "authelia@file") (not .Values.forwardAuth.enabled) }}
+{{- fail "dashboard.auth.middleware authelia@file needs forwardAuth.enabled" -}}
+{{- end }}
+{{- end }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "traefik.fullname" . }}-dashboard
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "traefik.labels" . | nindent 4 }}
+  annotations:
+    {{- if .Values.dashboard.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.dashboard.tls.clusterIssuer | quote }}
+    {{- end }}
+    {{- if .Values.dashboard.auth.enabled }}
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Values.dashboard.auth.middleware }},dashboard-redirect@file
+    {{- else }}
+    traefik.ingress.kubernetes.io/router.middlewares: dashboard-redirect@file
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.dashboard.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.dashboard.host | quote }}
+      secretName: {{ include "traefik.fullname" . }}-dashboard-tls
+  {{- end }}
+  rules:
+    - host: {{ .Values.dashboard.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "traefik.fullname" . }}
+                port:
+                  name: traefik
+{{- end }}
