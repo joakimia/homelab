@@ -1,0 +1,3 @@
+# exit: 2
+# args: --join not-a-target microk8s worker-node debian@wk0
+# expect: Use an SSH target like

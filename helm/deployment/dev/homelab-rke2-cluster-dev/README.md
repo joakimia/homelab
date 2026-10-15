@@ -21,7 +21,7 @@ Application charts only ask for `homelab-pvc-storage`, so they are the same in b
 Provision the node with the [RKE2 seed](../../../../infratructure/on-premises/virtual-machine/debian12/rke2/README.md), then run this from the repository root on the Mac:
 
 ```sh
-NODE_IP=192.168.64.20   # in the VM console: ip -4 -o addr show dev enp0s1
+NODE_IP=192.168.5.60    # in the VM console: ip -4 -o addr show dev enp0s1
 infratructure/on-premises/virtual-machine/debian12/install.sh rke2 control-plane-node "debian@$NODE_IP"
 helm/deployment/dev/homelab-rke2-cluster-dev/install.sh "debian@$NODE_IP"
 curl --cacert .local/homelab-ca/ca.crt --resolve "homepage.homelab.com:8443:$NODE_IP" https://homepage.homelab.com:8443/

@@ -1,0 +1,3 @@
+# exit: 2
+# args: --join-only debian@cp0 rke2 control-plane-node debian@cp1
+# expect: provision it again with --join

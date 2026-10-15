@@ -1,0 +1,3 @@
+# exit: 2
+# args: --join debian@cp0 jumpbox debian@jb
+# expect: --join and --join-only work only for Kubernetes nodes over SSH.

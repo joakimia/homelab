@@ -1,0 +1,12 @@
+dependencies:
+- name: homelab-static-web-app
+  repository: file://../homelab-static-web-app
+  version: 0.1.0
+- name: homelab-cron-job
+  repository: file://../homelab-cron-job
+  version: 0.1.0
+- name: homelab-shared-pvc
+  repository: file://../homelab-shared-pvc
+  version: 0.1.0
+digest: sha256:08170aa6ddc6b74819c69362d1380b42f89048e08dcec051f08dd110e3d95987
+generated: "2026-10-14T23:04:30.372855+02:00"

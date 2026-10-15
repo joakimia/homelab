@@ -1,0 +1,6 @@
+# The node cannot reach the control plane: stop before a token is created.
+# exit: 1
+# args: --join-only debian@cp0 microk8s worker-node debian@wk0
+# reply: debian@wk0 timeout 5 bash -c '</dev/tcp/192.0.2.10/25000' => !exit 1
+# expect: debian@wk0 cannot reach 192.0.2.10:25000.
+# expect-not: prepare_join

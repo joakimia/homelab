@@ -14,7 +14,7 @@ Before deploying, on a VM provisioned earlier:
 Provision the VM first ([guide](../../../../infratructure/on-premises/virtual-machine/debian12/README.md)), then run this from the repository root on the Mac:
 
 ```sh
-VM_IP=192.168.64.9      # in the VM console: ip -4 -o addr show dev enp0s1
+VM_IP=192.168.5.57      # the control plane; in the VM console: ip -4 -o addr show dev enp0s1
 infratructure/on-premises/virtual-machine/debian12/install.sh microk8s control-plane-node "debian@$VM_IP"
 helm/deployment/dev/local-microk8s-cluster-dev/install.sh "debian@$VM_IP"
 curl --cacert .local/homelab-ca/ca.crt --resolve "homepage.homelab.com:8443:$VM_IP" https://homepage.homelab.com:8443/
@@ -85,9 +85,6 @@ The homepage, pgAdmin, Grafana, and Prometheus require an Authelia login (`https
 
 Traefik listens on host ports **8443** (HTTPS) and 8080 (HTTP); ports 443 and 80 are not used, so URLs include the port. An Ingress hostname does not create DNS. Either use `curl --resolve` as in the quick start, or add `/etc/hosts` entries for `homepage.homelab.com`, `pgadmin.homelab.com`, `grafana.homelab.com`, `prometheus.homelab.com`, and `auth.homelab.com` pointing to the VM. 
 
-UTM Shared Network uses DHCP on `192.168.64.0/24`, with gateway and DNS at `192.168.64.1`, so the VM address can change. Update `/etc/hosts` and rerun `deploy.sh --kubeconfig` when it does. For a fixed address, either:
+The VMs use bridged networking, so they get DHCP addresses from the LAN router (UTM's Shared mode would keep the nodes from reaching each other). The addresses change when the Mac moves to another network, or when a lease runs out. Then update `/etc/hosts`, rerun `deploy.sh --kubeconfig debian@<cp0-ip>`, and rerun `install.sh --join-only` for each worker so the nodes' `/etc/hosts` entries follow. For fixed addresses, add DHCP reservations on the router.
 
-- narrow UTM's DHCP range (for example `.100`–`.254`) and add a NoCloud `network-config` for `enp0s1`, for example `192.168.64.10/24`. The seed generator does not emit `network-config` yet; or
-- use bridged networking with a DHCP reservation on the LAN router.
-
-These `192.168.64.x` settings apply only to this UTM VM. RKE2 on hardware will get its own profile with LAN addressing, DNS, storage, and ingress choices.
+These settings apply only to the UTM VMs. RKE2 on hardware will get its own profile with LAN addressing, DNS, storage, and ingress choices.

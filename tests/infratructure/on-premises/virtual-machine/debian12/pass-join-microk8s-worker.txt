@@ -1,0 +1,10 @@
+# Provisions a worker, then joins it: the token comes through files, never arguments.
+# args: --join debian@cp0 microk8s worker-node debian@wk0
+# reply: debian@cp0 cat '.homelab-join- => 192.0.2.10:25000/K10secret/hash
+# expect-order: apply_seed
+# expect-order: timeout 5 bash -c '</dev/tcp/192.0.2.10/25000'
+# expect-order: prepare_join 'homelab-wk0' '192.0.2.20' '192.0.2.10'
+# expect-order: join_node 'homelab-cp0' '192.0.2.10' '.homelab-join-
+# expect-order: 'worker-node' 'debian'
+# expect-order: /snap/bin/microk8s kubectl wait --for=condition=Ready 'node/homelab-wk0'
+# expect-not: K10secret

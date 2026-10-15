@@ -1,0 +1,6 @@
+# An RKE2 control plane joins with the server token.
+# args: --join debian@cp0 rke2 control-plane-node debian@cp1 homelab-rke2-cp1
+# reply: debian@cp1 ip -4 route => 1.1.1.1 via 192.0.2.1 dev eth0 src 192.0.2.11 uid 1000
+# expect-order: export_rke2_token 'control-plane-node'
+# expect-order: write_rke2_join 'https://192.0.2.10:9345'
+# expect-order: apply_seed

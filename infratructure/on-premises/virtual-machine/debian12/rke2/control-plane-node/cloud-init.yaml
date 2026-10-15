@@ -69,6 +69,8 @@ runcmd:
 
 
   # Step 4: Start the RKE2 server
+  # A new cluster, or another server of an existing one when install.sh --join has written
+  # config.yaml.d/50-join.yaml.
   - [systemctl, enable, --now, rke2-server.service]
 
 

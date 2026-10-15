@@ -1,0 +1,3 @@
+# exit: 2
+# args: --join debian@cp0 --iso microk8s worker-node
+# expect: --join and --join-only work only for Kubernetes nodes over SSH.

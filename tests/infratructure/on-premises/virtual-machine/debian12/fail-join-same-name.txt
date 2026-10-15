@@ -1,0 +1,5 @@
+# Two nodes with one name: RKE2 stops before the seed runs.
+# exit: 1
+# args: --join debian@cp0 rke2 worker-node debian@wk0 homelab-cp0
+# expect: Both machines are named homelab-cp0; node names must be unique.
+# expect-not: apply_seed

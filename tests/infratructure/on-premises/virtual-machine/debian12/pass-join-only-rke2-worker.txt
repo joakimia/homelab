@@ -1,0 +1,7 @@
+# RKE2 --join-only: writes the join settings, then starts the agent; no seed.
+# args: --join-only debian@cp0 rke2 worker-node debian@wk0
+# expect-order: export_rke2_token 'worker-node'
+# expect-order: write_rke2_join 'https://192.0.2.10:9345'
+# expect-order: sudo systemctl enable rke2-agent.service && sudo systemctl restart rke2-agent.service
+# expect-order: kubectl wait --for=condition=Ready 'node/homelab-wk0'
+# expect-not: apply_seed
