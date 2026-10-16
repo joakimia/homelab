@@ -1,0 +1,12 @@
+# Longhorn on the MicroK8s VM, for learning the UI and tools: one node, so no replication.
+# The VM needs open-iscsi, nfs-common, and iscsid (the MicroK8s seed installs them).
+
+# Login through Authelia: Longhorn has no login of its own.
+ingress:
+  auth:
+    enabled: true
+
+longhorn:
+  csi:
+    # MicroK8s runs the kubelet from its snap, not /var/lib/kubelet.
+    kubeletRootDir: /var/snap/microk8s/common/var/lib/kubelet

@@ -1,0 +1,28 @@
+apiVersion: v2
+name: homelab
+description: The homelab's own apps, built from the homelab base charts (homepage, periodic cleanup, shared PVC).
+
+type: application
+
+version: 0.1.0
+
+appVersion: 1.0.0
+
+# Local base charts, each included under an alias. scripts/install.sh packages them into
+# charts/ (helm dependency build); another app is one more alias here. Files the apps use live
+# in this chart (static-assets/, scripts/) and reach them through templates/configmap.yaml.
+dependencies:
+  - name: homelab-static-web-app
+    alias: homelab-frontend
+    version: 0.1.0
+    repository: file://../homelab-static-web-app
+  - name: homelab-cron-job
+    alias: homelab-periodic-cleanup
+    version: 0.1.0
+    repository: file://../homelab-cron-job
+    condition: homelab-periodic-cleanup.enabled
+  - name: homelab-shared-pvc
+    alias: homelab-shared-pvc
+    version: 0.1.0
+    repository: file://../homelab-shared-pvc
+    condition: homelab-shared-pvc.enabled

@@ -1,0 +1,2 @@
+# expect: host must equal grafana.grafana.ini.server.domain
+host: metrics.homelab.com

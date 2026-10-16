@@ -69,6 +69,8 @@ service:
   ports:
     web: 8080
     websecure: 8443
+    # Only with dashboard.enabled.
+    traefik: 9000
 
 ingress:
   className: traefik
@@ -80,6 +82,33 @@ forwardAuth:
   enabled: true
   address: http://authelia.hlab-platform.svc.cluster.local:9091/api/authz/forward-auth
   authResponseHeaders: [Remote-User, Remote-Groups, Remote-Email, Remote-Name]
+
+# Prometheus metrics (requests, durations, status codes per entrypoint, router, and service) at
+# :9000/metrics on the traefik entrypoint. The pod annotations let Prometheus find it.
+metrics:
+  enabled: true
+
+# One trace per request, sent over OTLP gRPC to Alloy, which forwards it to Tempo.
+tracing:
+  enabled: true
+  endpoint: alloy.hlab-observability.svc.cluster.local:4317
+  # Share of requests traced, 0 to 1.
+  sampleRate: 1
+
+# Read-only view of Traefik's routers, services, and middlewares at https://<host>:8443/.
+# It is served on the traefik entrypoint (9000, inside the cluster only) and published by this
+# chart's own Ingress through the Service; / redirects to /dashboard/.
+dashboard:
+  enabled: true
+  host: traefik.homelab.com
+  # Certificate for host from cert-manager (needs the cert-manager and cert-issuers charts).
+  tls:
+    enabled: true
+    clusterIssuer: homelab-ca
+  # Login through Authelia; the route is then HTTPS only. The dashboard has no login of its own.
+  auth:
+    enabled: true
+    middleware: authelia@file
 
 podAnnotations: {}
 

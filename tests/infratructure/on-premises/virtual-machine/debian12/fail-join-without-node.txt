@@ -1,0 +1,3 @@
+# exit: 2
+# args: --join debian@cp0
+# expect: Usage:

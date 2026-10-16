@@ -1,0 +1,9 @@
+apiVersion: v2
+name: homelab-shared-pvc
+description: Base chart for a PersistentVolumeClaim that several workloads mount and that outlives their releases. Not used by any profile yet.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 1.0.0

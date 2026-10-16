@@ -1,0 +1,5 @@
+# exit: 1
+# args: --join-only debian@cp0 rke2 worker-node debian@wk0
+# reply: debian@wk0 timeout 5 bash -c '</dev/tcp/192.0.2.10/9345' => !exit 1
+# expect: debian@wk0 cannot reach 192.0.2.10:9345.
+# expect-not: export_rke2_token

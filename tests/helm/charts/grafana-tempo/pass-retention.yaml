@@ -1,0 +1,5 @@
+# expect: block_retention: 24h
+# expect: storageClassName: homelab-pvc-storage
+tempo:
+  tempo:
+    retention: 24h

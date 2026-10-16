@@ -1,0 +1,3 @@
+# exit: 2
+# args: --join debian@cp0 --join-only debian@cp0 microk8s worker-node debian@wk0
+# expect: Usage:

@@ -14,12 +14,15 @@
         "frontend",
         "backendApi",
         "backgroundWorkers",
+        "mqtt",
+        "amqp",
         "database",
         "filestore",
         "storage",
         "platform",
         "tools",
-        "observability"
+        "observability",
+        "observabilityAgents"
       ],
       "additionalProperties": false,
       "properties": {
@@ -33,6 +36,12 @@
           "$ref": "#/definitions/namespace"
         },
         "backgroundWorkers": {
+          "$ref": "#/definitions/namespace"
+        },
+        "mqtt": {
+          "$ref": "#/definitions/namespace"
+        },
+        "amqp": {
           "$ref": "#/definitions/namespace"
         },
         "database": {
@@ -52,6 +61,9 @@
         },
         "observability": {
           "$ref": "#/definitions/namespace"
+        },
+        "observabilityAgents": {
+          "$ref": "#/definitions/namespace"
         }
       }
     },
@@ -64,7 +76,12 @@
         "pgadmin",
         "pgbouncer",
         "postgres",
-        "postgresSetup"
+        "postgresSetup",
+        "grafana",
+        "prometheus",
+        "loki",
+        "tempo",
+        "alloy"
       ],
       "properties": {
         "enabled": {
@@ -91,7 +108,8 @@
           "type": "object",
           "required": [
             "podSelector",
-            "ports"
+            "ports",
+            "internalPort"
           ],
           "properties": {
             "podSelector": {
@@ -109,6 +127,15 @@
                 "minimum": 1,
                 "maximum": 65535
               }
+            },
+            "internalPort": {
+              "type": [
+                "string",
+                "integer"
+              ],
+              "pattern": "^[a-z0-9-]+$",
+              "minimum": 1,
+              "maximum": 65535
             }
           },
           "additionalProperties": false
@@ -124,6 +151,44 @@
         },
         "postgresSetup": {
           "$ref": "#/definitions/workloadSelector"
+        },
+        "grafana": {
+          "$ref": "#/definitions/workloadSelector"
+        },
+        "prometheus": {
+          "$ref": "#/definitions/workloadSelector"
+        },
+        "loki": {
+          "$ref": "#/definitions/workloadSelector"
+        },
+        "tempo": {
+          "$ref": "#/definitions/workloadSelector"
+        },
+        "alloy": {
+          "type": "object",
+          "required": [
+            "podSelector",
+            "otlpPorts"
+          ],
+          "properties": {
+            "podSelector": {
+              "$ref": "#/definitions/labelSelector"
+            },
+            "otlpPorts": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": [
+                  "string",
+                  "integer"
+                ],
+                "pattern": "^[a-z0-9-]+$",
+                "minimum": 1,
+                "maximum": 65535
+              }
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

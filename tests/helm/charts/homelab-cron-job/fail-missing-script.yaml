@@ -1,0 +1,6 @@
+# expect: script or scriptConfigMap is required
+name: hello
+image:
+  repository: alpine
+  tag: "3.24"
+schedule: 0 * * * *

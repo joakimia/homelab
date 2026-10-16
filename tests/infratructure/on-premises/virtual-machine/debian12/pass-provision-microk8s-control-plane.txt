@@ -1,0 +1,9 @@
+# Provisions a control plane over SSH: the seed gets the SSH key and the default hostname.
+# args: microk8s control-plane-node debian@cp0
+# expect: == scp meta-data
+# expect: local-hostname: homelab-cp0
+# expect: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHRlc3Qta2V5LWZvci1jaGVjay1zaA
+# expect: microk8s, enable, metrics-server
+# expect-order: scp
+# expect-order: apply_seed '/home/debian/.homelab-cloud-init-homelab-cp0-
+# expect-not: .homelab-join

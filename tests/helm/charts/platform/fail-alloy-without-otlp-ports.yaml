@@ -1,0 +1,4 @@
+# expect: /networkPolicies/alloy/otlpPorts
+networkPolicies:
+  alloy:
+    otlpPorts: []

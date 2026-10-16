@@ -1,0 +1,99 @@
+# Must equal grafana."grafana.ini".server.domain (Grafana builds its redirect URLs from it).
+host: grafana.homelab.com
+
+ingress:
+  className: traefik
+  # Certificate for host from cert-manager (needs the cert-manager and cert-issuers charts).
+  tls:
+    enabled: true
+    clusterIssuer: homelab-ca
+  # Login through Authelia (Traefik ForwardAuth); the route is then HTTPS only. Turn on
+  # grafana."grafana.ini"."auth.proxy" with it to log in as the Authelia user.
+  auth:
+    enabled: false
+    middleware: authelia@file
+
+# Upstream chart values go under the dependency name.
+grafana:
+  # Service grafana, port 80 (the Ingress uses fullnameOverride and service.port).
+  fullnameOverride: grafana
+  # Created by scripts/install.sh.
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  # A StatefulSet claim (SQLite database: users, dashboards made in the UI) is kept on uninstall.
+  persistence:
+    enabled: true
+    type: statefulset
+    storageClassName: homelab-pvc-storage
+    size: 1Gi
+  # fsGroup already makes the volume writable; the init container would run as root.
+  initChownData:
+    enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+  testFramework:
+    enabled: false
+  grafana.ini:
+    server:
+      domain: grafana.homelab.com
+      root_url: https://%(domain)s:8443/
+    analytics:
+      check_for_updates: false
+      reporting_enabled: false
+    # Login from the Remote-* headers Authelia sets through Traefik. Off unless the profile
+    # turns on ingress.auth and sets whitelist to the pod network (where Traefik connects from).
+    # An Authelia user with the Grafana admin's name logs in as that admin.
+    auth.proxy:
+      enabled: false
+      header_name: Remote-User
+      header_property: username
+      headers: Email:Remote-Email Name:Remote-Name
+      auto_sign_up: true
+      whitelist: ""
+    # Editors can use Explore (free queries over logs, metrics, and traces); Viewers only see
+    # dashboards. Applies when a user is created; change existing users under Administration.
+    users:
+      auto_assign_org_role: Editor
+  # Dashboards from dashboards/*.json, rendered into the ConfigMap named in
+  # dashboardsConfigMaps.homelab by templates/configmap.yaml. Change them in Git, not in the UI.
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: homelab
+          folder: Homelab
+          type: file
+          disableDeletion: true
+          allowUiUpdates: false
+          options:
+            path: /var/lib/grafana/dashboards/homelab
+  dashboardsConfigMaps:
+    homelab: grafana-dashboards
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          uid: prometheus
+          type: prometheus
+          url: http://prometheus-server
+          isDefault: true
+        - name: Loki
+          uid: loki
+          type: loki
+          url: http://loki:3100
+        - name: Tempo
+          uid: tempo
+          type: tempo
+          url: http://tempo:3200
+          jsonData:
+            tracesToLogsV2:
+              datasourceUid: loki
+            serviceMap:
+              datasourceUid: prometheus

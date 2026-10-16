@@ -1,0 +1,80 @@
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "image settings are required" .Values.image -}}
+{{- $_ := required "image.repository is required" .Values.image.repository -}}
+{{- $_ := required "image.tag is required" .Values.image.tag -}}
+{{- $_ := required "schedule is required" .Values.schedule -}}
+{{- if not .Values.scriptConfigMap }}
+{{- $_ := required "script or scriptConfigMap is required" .Values.script -}}
+{{- end }}
+{{- $_ := required "resources are required" .Values.resources -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+spec:
+  schedule: {{ .Values.schedule | quote }}
+  {{- with .Values.timeZone }}
+  timeZone: {{ . }}
+  {{- end }}
+  concurrencyPolicy: {{ .Values.concurrencyPolicy }}
+  startingDeadlineSeconds: {{ .Values.startingDeadlineSeconds }}
+  successfulJobsHistoryLimit: {{ .Values.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: {{ .Values.name }}
+          {{- if not .Values.scriptConfigMap }}
+          annotations:
+            checksum/script: {{ .Values.script | sha256sum }}
+          {{- end }}
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ .Values.name }}
+          enableServiceLinks: false
+          {{- with .Values.podSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            # A Job runs to completion, so it has no probes; activeDeadlineSeconds stops a hung run.
+            - name: {{ .Values.name }}
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: [sh, /script/run.sh]
+              {{- with include "homelab.containerEnv" . | trim }}
+              env:
+                {{- . | nindent 16 }}
+              {{- end }}
+              {{- with .Values.securityContext }}
+              securityContext:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              volumeMounts:
+                - name: script
+                  mountPath: /script
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+                {{- with include "homelab.secretVolumeMounts" . | trim }}
+                {{- . | nindent 16 }}
+                {{- end }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+          volumes:
+            - name: script
+              configMap:
+                name: {{ .Values.scriptConfigMap | default (printf "%s-script" .Values.name) }}
+            - name: tmp
+              emptyDir: {}
+            {{- with include "homelab.secretVolumes" . | trim }}
+            {{- . | nindent 12 }}
+            {{- end }}

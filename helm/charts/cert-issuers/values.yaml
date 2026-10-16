@@ -1,6 +1,6 @@
 namespace: hlab-platform
 
-name: cert-issuer
+name: cert-issuers
 
 # Used by Ingresses as cert-manager.io/cluster-issuer: <name>.
 clusterIssuer:

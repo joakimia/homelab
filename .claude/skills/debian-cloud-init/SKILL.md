@@ -9,7 +9,7 @@ Use this skill when you provision a fresh Debian machine, change a cloud-init se
 
 ## Workflow
 
-1. Read `AGENTS.md`, `infratructure/on-premises/debian12/README.md`, and the README for the seed (`microk8s/`, `rke2/`, or `jumpbox/`) first.
+1. Read `AGENTS.md`, `infratructure/on-premises/virtual-machine/debian12/README.md`, and the README for the seed (`microk8s/`, `rke2/`, or `jumpbox/`) first.
 2. Confirm the target address, the Debian user (`debian`, with sudo; the installer's root password left empty), and which seed is being provisioned. Never assume an earlier machine or package installation still exists.
 3. A minimal Debian install may not include cloud-init. Use these commands:
    - `debian12/install.sh <microk8s|rke2> <role> debian@<ip>` or `install.sh jumpbox debian@<ip>` installs cloud-init over SSH, stages the seed, and runs it.
@@ -22,7 +22,7 @@ Use this skill when you provision a fresh Debian machine, change a cloud-init se
 5. The jumpbox is not a cluster node. It hosts the local registry and receives the provisioning bundle (`~/homelab-bundle`), so nodes can be provisioned from it with the jumpbox's own SSH key.
 6. Ask the operator to type SSH and sudo passwords interactively. Never put passwords in arguments, scripts, logs, or Git. Only the first run needs the SSH password; the seed authorizes the provisioning machine's public key.
 7. After provisioning, check `cloud-init status --long`, `/var/log/cloud-init-output.log`, and, as appropriate, `microk8s status --wait-ready` or `systemctl status rke2-server`, then `kubectl get nodes`, `helm version`, and `k9s version`. Report which checks ran and their results.
-8. For seed changes, run `tests/check.sh seeds` (YAML parsing and `dash -n` on each `runcmd` block; cloud-init runs them with `/bin/sh`, which is dash on Debian). A new seed or check belongs in `check.sh` in the same change. Do not provision a machine unless the user asks.
+8. For seed changes, run `tests/check.sh seeds` (YAML parsing and `dash -n` on each `runcmd` block; cloud-init runs them with `/bin/sh`, which is dash on Debian) and `tests/check.sh schema` (Docker: Debian 12's `cloud-init schema` on the rendered user-data). A new seed or check belongs in `check.sh` in the same change. Do not provision a machine unless the user asks.
 
 ## Known pitfalls
 
@@ -36,6 +36,6 @@ Use this skill when you provision a fresh Debian machine, change a cloud-init se
 
 ## UTM specifics (current MicroK8s VM)
 
-- UTM Shared Network uses DHCP on `192.168.64.0/24`, with gateway and DNS at `192.168.64.1`. Find the guest IP in the console with `ip -4 -o addr show dev enp0s1`. The address can change.
+- The VMs use UTM's Apple Virtualization backend with **Bridged** networking: they get DHCP addresses from the LAN router, which change when the Mac changes network. Shared mode isolates VMs from each other (ARP fails, `No route to host`), so a node cannot join. Find the guest IP in the console with `ip -4 -o addr show dev enp0s1`.
 - `install.sh --iso` output can be attached as a CD/DVD drive in UTM.
 - These network details do not carry over to RKE2 on hardware; the home LAN needs its own addressing and DNS.

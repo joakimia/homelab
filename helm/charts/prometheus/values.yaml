@@ -1,0 +1,147 @@
+host: prometheus.homelab.com
+
+ingress:
+  className: traefik
+  # Certificate for host from cert-manager (needs the cert-manager and cert-issuers charts).
+  tls:
+    enabled: true
+    clusterIssuer: homelab-ca
+  # Login through Authelia (Traefik ForwardAuth); the route is then HTTPS only. Without it, the
+  # UI is open to everyone who can reach Traefik: prometheus has no login of its own.
+  auth:
+    enabled: false
+    middleware: authelia@file
+  # The server Service (prometheus.fullnameOverride + "-server").
+  backend:
+    service: prometheus-server
+    port: 80
+
+# Upstream chart values go under the dependency name.
+prometheus:
+  # Server Service: prometheus-server, port 80 (Grafana and Alloy use it).
+  fullnameOverride: prometheus
+  server:
+    # A StatefulSet keeps its data claim when the release is uninstalled.
+    statefulSet:
+      enabled: true
+    # Alloy sends OTLP metrics to /api/v1/otlp.
+    extraFlags:
+      - web.enable-lifecycle
+      - web.enable-otlp-receiver
+    # Short retention for a small node; whichever limit is hit first applies.
+    retention: 3d
+    retentionSize: 3GB
+    persistentVolume:
+      size: 4Gi
+      storageClass: homelab-pvc-storage
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+      readOnlyRootFilesystem: true
+      seccompProfile:
+        type: RuntimeDefault
+  configmapReload:
+    prometheus:
+      resources:
+        requests:
+          cpu: 5m
+          memory: 16Mi
+        limits:
+          memory: 64Mi
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        readOnlyRootFilesystem: true
+        seccompProfile:
+          type: RuntimeDefault
+  kube-state-metrics:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+  # Node disk, filesystem, memory, and network. It needs hostNetwork, hostPID, and hostPath, so it
+  # runs in the privileged hlab-observability-agents namespace, not the baseline hlab-observability.
+  prometheus-node-exporter:
+    enabled: true
+    namespaceOverride: hlab-observability-agents
+    resources:
+      requests:
+        cpu: 10m
+        memory: 24Mi
+      limits:
+        memory: 64Mi
+  # No alert receivers or push jobs yet.
+  alertmanager:
+    enabled: false
+  prometheus-pushgateway:
+    enabled: false
+  # Alert rules, evaluated by Prometheus and listed in Grafana under Alerting. Without
+  # Alertmanager they only show as pending or firing; nothing is sent anywhere.
+  serverFiles:
+    alerting_rules.yml:
+      groups:
+        - name: homelab-kubernetes
+          rules:
+            - alert: PodCrashLooping
+              expr: max by (namespace, pod, container) (kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}) == 1
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: '{{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) keeps crashing'
+            - alert: PodNotReady
+              expr: sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0
+              for: 15m
+              labels:
+                severity: warning
+              annotations:
+                summary: '{{ $labels.namespace }}/{{ $labels.pod }} has not been running for 15 minutes'
+            - alert: JobFailed
+              expr: kube_job_status_failed > 0
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: 'Job {{ $labels.namespace }}/{{ $labels.job_name }} failed'
+            - alert: ScrapeTargetDown
+              expr: up == 0
+              for: 5m
+              labels:
+                severity: warning
+              annotations:
+                summary: 'Prometheus cannot scrape {{ $labels.job }} at {{ $labels.instance }}'
+        - name: homelab-node
+          rules:
+            - alert: NodeDiskAlmostFull
+              expr: node_filesystem_avail_bytes{mountpoint="/", fstype!~"tmpfs|overlay|squashfs|nsfs"} / node_filesystem_size_bytes{mountpoint="/", fstype!~"tmpfs|overlay|squashfs|nsfs"} < 0.10
+              for: 10m
+              labels:
+                severity: critical
+              annotations:
+                summary: 'Less than 10% free on / of {{ $labels.node }}'
+            - alert: NodeMemoryHigh
+              expr: 1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes > 0.90
+              for: 15m
+              labels:
+                severity: warning
+              annotations:
+                summary: 'Memory on {{ $labels.node }} is over 90% used'
+        - name: homelab-traefik
+          rules:
+            - alert: TraefikHighErrorRate
+              expr: sum by (service) (rate(traefik_service_requests_total{code=~"5.."}[5m])) / sum by (service) (rate(traefik_service_requests_total[5m])) > 0.05
+              for: 10m
+              labels:
+                severity: warning
+              annotations:
+                summary: 'Over 5% of requests to {{ $labels.service }} fail with 5xx'

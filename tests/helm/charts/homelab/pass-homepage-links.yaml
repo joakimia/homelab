@@ -1,0 +1,14 @@
+# A profile overrides links by key and adds more: only enabled links are on the page.
+# expect: <li><a href="https://longhorn.homelab.com:8443">Longhorn</a></li>
+# expect: <li><a href="https://grafana.homelab.com:8443">Grafana</a></li>
+# expect: <li><a href="https://example.homelab.com:8443/">Example</a></li>
+homelab-frontend:
+  links:
+    longhorn:
+      enabled: true
+    traefik:
+      enabled: false
+    example:
+      title: Example
+      url: https://example.homelab.com:8443/
+      enabled: true

@@ -27,6 +27,12 @@
 {{- $_ := required "ingress settings are required" .Values.ingress -}}
 {{- $_ := required "ingress.className is required" .Values.ingress.className -}}
 {{- $_ := required "forwardAuth settings are required" .Values.forwardAuth -}}
+{{- $_ := required "dashboard settings are required" .Values.dashboard -}}
+{{- $_ := required "metrics settings are required" .Values.metrics -}}
+{{- $_ := required "tracing settings are required" .Values.tracing -}}
+{{- if .Values.tracing.enabled }}
+{{- $_ := required "tracing.endpoint is required when tracing.enabled is true" .Values.tracing.endpoint -}}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -50,6 +56,11 @@ spec:
         {{- include "traefik.selectorLabels" . | nindent 8 }}
       annotations:
         checksum/dynamic: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if .Values.metrics.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.ports.traefik.containerPort | quote }}
+        prometheus.io/path: /metrics
+        {{- end }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -84,12 +95,31 @@ spec:
             # TLS on websecure for every route; certificate from the Ingress spec.tls Secret.
             - --entrypoints.websecure.http.tls=true
             - --entrypoints.traefik.address=:{{ .Values.ports.traefik.containerPort }}
-            {{- if .Values.forwardAuth.enabled }}
+            {{- if or .Values.forwardAuth.enabled .Values.dashboard.enabled }}
             - --providers.file.directory=/etc/traefik/dynamic
             - --providers.file.watch=true
             {{- end }}
             - --ping=true
             - --ping.entrypoint=traefik
+            {{- if .Values.dashboard.enabled }}
+            # Dashboard and API on the traefik entrypoint, reached only through the Service.
+            - --api.dashboard=true
+            - --api.insecure=true
+            {{- end }}
+            {{- if .Values.metrics.enabled }}
+            - --metrics.prometheus=true
+            - --metrics.prometheus.entrypoint=traefik
+            - --metrics.prometheus.addRoutersLabels=true
+            {{- end }}
+            {{- if .Values.tracing.enabled }}
+            - --tracing=true
+            - --tracing.serviceName={{ include "traefik.fullname" . }}
+            - --tracing.sampleRate={{ .Values.tracing.sampleRate }}
+            - --tracing.otlp=true
+            - --tracing.otlp.grpc=true
+            - --tracing.otlp.grpc.endpoint={{ .Values.tracing.endpoint }}
+            - --tracing.otlp.grpc.insecure=true
+            {{- end }}
             - --accesslog=true
             - --log.level=INFO
           ports:
@@ -115,7 +145,7 @@ spec:
           volumeMounts:
             - name: tmp
               mountPath: /tmp
-            {{- if .Values.forwardAuth.enabled }}
+            {{- if or .Values.forwardAuth.enabled .Values.dashboard.enabled }}
             - name: dynamic
               mountPath: /etc/traefik/dynamic
               readOnly: true
@@ -137,7 +167,7 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
-        {{- if .Values.forwardAuth.enabled }}
+        {{- if or .Values.forwardAuth.enabled .Values.dashboard.enabled }}
         - name: dynamic
           configMap:
             name: {{ include "traefik.fullname" . }}-dynamic

@@ -1,0 +1,6 @@
+# expect: --storage.tsdb.retention.time=1d
+# expect: --web.enable-otlp-receiver
+# expect: kind: StatefulSet
+prometheus:
+  server:
+    retention: 1d

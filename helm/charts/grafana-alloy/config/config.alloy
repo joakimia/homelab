@@ -1,0 +1,98 @@
+// Alloy pipeline, rendered with tpl by templates/configmap.yaml (endpoints.* values).
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// Pod logs through the Kubernetes API (no hostPath), labelled with namespace, pod, container, and app.
+discovery.kubernetes "pods" {
+  role = "pod"
+}
+
+discovery.relabel "pods" {
+  targets = discovery.kubernetes.pods.targets
+
+  rule {
+    source_labels = ["__meta_kubernetes_namespace"]
+    target_label  = "namespace"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_name"]
+    target_label  = "pod"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+    target_label  = "container"
+  }
+  rule {
+    source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+    target_label  = "app"
+  }
+}
+
+loki.source.kubernetes "pods" {
+  targets    = discovery.relabel.pods.output
+  forward_to = [loki.write.default.receiver]
+}
+
+// Loki's push API keeps these labels as stream labels; over OTLP they would become structured
+// metadata, and {namespace="..."} would find nothing.
+loki.write "default" {
+  endpoint {
+    url = "{{ .Values.endpoints.lokiPush }}"
+  }
+}
+
+// Kubernetes events (FailedMount, OOMKilled, BackOff, Evicted, ...) as logs with job="kubernetes-events".
+// Every replica would ship them again, so this needs the single replica.
+loki.source.kubernetes_events "cluster" {
+  job_name   = "kubernetes-events"
+  log_format = "logfmt"
+  forward_to = [loki.write.default.receiver]
+}
+
+// OTLP from apps: metrics to Prometheus, logs to Loki (resource attributes such as service.name
+// and k8s.namespace.name become labels), traces to Tempo.
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    metrics = [otelcol.exporter.otlphttp.prometheus.input]
+    logs    = [otelcol.exporter.otlphttp.loki.input]
+    traces  = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlphttp "prometheus" {
+  client {
+    endpoint = "{{ .Values.endpoints.prometheus }}"
+  }
+}
+
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = "{{ .Values.endpoints.lokiOtlp }}"
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "{{ .Values.endpoints.tempo }}"
+    tls {
+      insecure = true
+    }
+  }
+}

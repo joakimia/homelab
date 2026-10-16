@@ -1,0 +1,4 @@
+# expect: /networkPolicies/loki': missing property 'podSelector'
+networkPolicies:
+  loki:
+    podSelector: null

@@ -1,0 +1,4 @@
+# expect: url = "http://loki.example:3100/loki/api/v1/push"
+# expect: name: alloy-config
+endpoints:
+  lokiPush: http://loki.example:3100/loki/api/v1/push

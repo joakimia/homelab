@@ -1,4 +1,6 @@
-# Runs the same static checks as `tests/check.sh` locally. No cluster, VM, or secrets.
+# Runs `tests/check.sh` with CI=true (set by GitHub), which adds the Docker groups. No cluster,
+# VM, or secrets. The weekly run on the default branch catches drift in upstream packages,
+# images, and charts.
 name: CI
 
 on:
@@ -7,6 +9,8 @@ on:
     paths-ignore: ['**/*.md', 'docs/**']
   pull_request:
     paths-ignore: ['**/*.md', 'docs/**']
+  schedule:
+    - cron: '0 5 * * 1'  # Mondays 05:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -25,4 +29,5 @@ jobs:
       - uses: azure/setup-helm@v4
         with:
           version: v4.3.0
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends xorriso  # seed ISO cases
       - run: tests/check.sh

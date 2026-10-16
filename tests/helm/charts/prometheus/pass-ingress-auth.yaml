@@ -1,0 +1,6 @@
+# expect: host: "prometheus.homelab.com"
+# expect: traefik.ingress.kubernetes.io/router.middlewares: authelia@file
+# expect: name: prometheus-server
+ingress:
+  auth:
+    enabled: true

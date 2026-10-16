@@ -1,7 +1,10 @@
 {{- $_ := required "namespace is required" .Values.namespace -}}
 {{- $_ := required "forwardAuth settings are required" .Values.forwardAuth -}}
+{{- $_ := required "dashboard settings are required" .Values.dashboard -}}
 {{- if .Values.forwardAuth.enabled -}}
 {{- $_ := required "forwardAuth.address is required" .Values.forwardAuth.address -}}
+{{- end -}}
+{{- if or .Values.forwardAuth.enabled .Values.dashboard.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -14,6 +17,7 @@ data:
   middlewares.yaml: |
     http:
       middlewares:
+        {{- if .Values.forwardAuth.enabled }}
         authelia:
           forwardAuth:
             address: {{ .Values.forwardAuth.address }}
@@ -21,4 +25,11 @@ data:
             authResponseHeaders:
               {{- toYaml . | nindent 14 }}
             {{- end }}
+        {{- end }}
+        {{- if .Values.dashboard.enabled }}
+        dashboard-redirect:
+          redirectRegex:
+            regex: ^(https?://[^/]+)/?$
+            replacement: ${1}/dashboard/
+        {{- end }}
 {{- end }}

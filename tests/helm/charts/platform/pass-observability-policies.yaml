@@ -1,0 +1,9 @@
+# expect: name: allow-traefik-to-grafana
+# expect: name: allow-traefik-to-prometheus
+# expect: name: allow-grafana-and-alloy-to-loki
+# expect: name: allow-prometheus-scrape
+# expect: port: otlp-grpc
+# expect: pod-security.kubernetes.io/enforce: "baseline"
+networkPolicies:
+  alloy:
+    otlpPorts: [otlp-grpc]

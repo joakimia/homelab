@@ -2,6 +2,11 @@
 # If no override values are needed, this file can be left empty.
 # It must be defined however, if you want to deploy the chart in this environment.
 
+# Longhorn runs in hlab-storage (privileged).
+namespaces:
+  storage:
+    enabled: true
+
 storageClass:
   enabled: true
   name: homelab-pvc-storage

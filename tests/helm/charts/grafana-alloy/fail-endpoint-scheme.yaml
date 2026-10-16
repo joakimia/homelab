@@ -1,0 +1,3 @@
+# expect: /endpoints/prometheus
+endpoints:
+  prometheus: prometheus-server/api/v1/otlp

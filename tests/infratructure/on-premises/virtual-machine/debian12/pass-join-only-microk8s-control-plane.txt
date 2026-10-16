@@ -1,0 +1,8 @@
+# --join-only joins a control plane provisioned earlier and does not run the seed again.
+# args: --join-only debian@cp0 microk8s control-plane-node debian@cp1
+# reply: debian@cp1 ip -4 route => 1.1.1.1 via 192.0.2.1 dev eth0 src 192.0.2.11 uid 1000
+# expect-order: prepare_join 'homelab-cp1' '192.0.2.11' '192.0.2.10'
+# expect-order: 'control-plane-node' 'debian'
+# expect-order: kubectl wait --for=condition=Ready 'node/homelab-cp1'
+# expect-not: apply_seed
+# expect-not: scp

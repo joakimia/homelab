@@ -61,7 +61,6 @@ roles:
       name: postgres-admin
       key: PASSWORD
 
-# <database>: {owner: <role name>}. Created if missing.
 databases: {}
 
 defaultEnv:

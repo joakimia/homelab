@@ -1,0 +1,14 @@
+# Optional environment specific override values for the local MicroK8s cluster goes here
+# If no override values are needed, this file can be left empty.
+# It must be defined however, if you want to deploy the chart in this environment.
+
+ingress:
+  auth:
+    enabled: true
+
+# Log in as the Authelia user: trust Remote-User from Traefik (pod network 10.1.0.0/16).
+grafana:
+  grafana.ini:
+    auth.proxy:
+      enabled: true
+      whitelist: 10.1.0.0/16

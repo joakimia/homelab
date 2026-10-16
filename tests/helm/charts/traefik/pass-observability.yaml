@@ -1,0 +1,8 @@
+# Default metrics and tracing: scrape annotations and OTLP to Alloy.
+# expect: prometheus.io/scrape: "true"
+# expect: prometheus.io/port: "9000"
+# expect: - --metrics.prometheus.entrypoint=traefik
+# expect: - --tracing.otlp.grpc.endpoint=alloy.hlab-observability.svc.cluster.local:4317
+# expect: - --tracing.sampleRate=0.1
+tracing:
+  sampleRate: 0.1

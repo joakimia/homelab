@@ -1,0 +1,7 @@
+# --iso only writes the seed ISO and connects nowhere.
+# args: --iso microk8s worker-node homelab-wk1
+# expect: == iso meta-data
+# expect: local-hostname: homelab-wk1
+# expect: == iso user-data
+# expect: ssh_authorized_keys:
+# expect-not: ssh debian@

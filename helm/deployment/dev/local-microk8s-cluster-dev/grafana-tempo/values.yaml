@@ -1,0 +1,3 @@
+# Optional environment specific override values for the local MicroK8s cluster goes here
+# If no override values are needed, this file can be left empty.
+# It must be defined however, if you want to deploy the chart in this environment.

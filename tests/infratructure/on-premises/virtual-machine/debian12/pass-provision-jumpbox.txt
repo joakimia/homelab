@@ -1,0 +1,6 @@
+# The jumpbox gets the seed, then the bundle in ~/homelab-bundle.
+# args: jumpbox debian@jb
+# expect: local-hostname: homelab-jumpbox
+# expect-order: apply_seed
+# expect-order: rm -rf '/home/debian/homelab-bundle'
+# expect-order: tar -xzf '/home/debian/homelab-bundle/bundle.tar.gz'

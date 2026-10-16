@@ -1,0 +1,11 @@
+namespace: hlab-filestore
+
+name: ""  # required
+
+storageClassName: homelab-pvc-storage
+# ReadWriteMany needs a class that supports it (Longhorn, NFS). With ReadWriteOnce, every pod
+# that mounts the claim must run on the same node.
+accessModes: [ReadWriteOnce]
+size: 1Gi
+# Keep the claim, and its data, when the release is uninstalled.
+keep: true

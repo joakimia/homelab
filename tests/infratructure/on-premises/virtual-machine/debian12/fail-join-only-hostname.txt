@@ -1,0 +1,4 @@
+# --join-only joins the machine as it is named; it takes no hostname.
+# exit: 2
+# args: --join-only debian@cp0 microk8s worker-node debian@wk0 homelab-wk1
+# expect: Usage:

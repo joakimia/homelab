@@ -19,7 +19,7 @@ Follow the layout the existing charts use (`pgbouncer`, `pgadmin`, and `traefik`
    {{- $_ := required "image.repository is required" .Values.image.repository -}}
    ```
    Use `fail` for rules such as postgres's `replicaCount must be 1`. Named variables are fine for values reused in the body, as in `platform/templates/network-policies.yaml`.
-4. **Value order and probes.** Order top-level values like `homepage`: `namespace`, `name`, (`host`), `image`, `replicaCount`, `resources`, `securityContext`, `podSecurityContext`, `probes` (startup, readiness, liveness), `ports`/`service`, `ingress`, chart-specific keys, then `defaultEnv`, `env`, `defaultSecrets`, `secrets`.
+4. **Value order and probes.** Order top-level values like `homelab-static-web-app`: `namespace`, `name`, (`host`), `image`, `replicaCount`, `resources`, `securityContext`, `podSecurityContext`, `probes` (startup, readiness, liveness), `ports`/`service`, `ingress`, chart-specific keys, then `defaultEnv`, `env`, `defaultSecrets`, `secrets`.
    - `name` names the resources and sets the `app.kubernetes.io/name` label.
    - `service.port`/`containerPort` for one port. With several ports (Traefik): `ports.<name>` for the pod and `service` for how they are exposed.
    - Container ports have fixed names (`http`, `postgresql`, `web`). Probes, Service `targetPort`, and NetworkPolicies refer to them by name, so changing a port number needs no other edits. A NetworkPolicy matches the pod's port, not the Service port.
@@ -37,11 +37,17 @@ Follow the layout the existing charts use (`pgbouncer`, `pgadmin`, and `traefik`
    - End with `helm upgrade --install <release> "$chart_dir" --namespace <ns> "$@"`. Keep the script executable and compatible with bash 3.2.
 8. **Ports and security.** Use unprivileged ports: HTTP apps on 8080, pgAdmin on 5050, Authelia on 9091, and Traefik on 8080/8443. Do not use port 80. Do not add `NET_BIND_SERVICE` for ports; add it only when the image binary has it as a file capability (caddy does: without it, exec fails with "operation not permitted"). Drop all capabilities and run as non-root.
 9. **Ingress and TLS.** Apps with a UI have `host` and `ingress.className` (`traefik`) and `ingress.tls.enabled` (default `true`) with `clusterIssuer` (`homelab-ca`). Their URL is `https://<host>:8443/`. `ingress.auth.enabled` adds Traefik's `authelia@file` ForwardAuth middleware and limits the route to HTTPS; the app gets `Remote-User`.
-10. **Network policy.** Pods use `app.kubernetes.io/name: <name>`. A new workload in a policed namespace needs a matching rule and selector in the platform chart. `hlab-platform` has no policies.
+10. **Network policy.** Pods use `app.kubernetes.io/name: <name>`. A new workload in a policed namespace needs a matching rule and selector in the platform chart. `hlab-observability` polices ingress only. `hlab-platform`, `hlab-storage`, and `hlab-tools` have no policies: their workloads talk to the API server, which NetworkPolicies cannot select reliably.
 11. **README.** Keep it short: what the chart does, how to install it, Secrets, a values table, and the list of templates. Mark scaffolds as such.
 12. **Own templates or upstream wrapper.** Write small workloads yourself (Traefik, PostgreSQL, Authelia). Wrap operators and large stacks (CloudNativePG, Longhorn, Prometheus, Grafana, Loki, Authentik, …) as a pinned dependency like `cert-manager`. Put an operator's custom resources in a separate chart installed after it (like `cert-issuers`): Helm cannot install CRDs and their resources in one release.
-13. **Deploying it.** Add the chart to the profile's `deploy-set.json` in dependency order. Do this only when the chart is implemented, and add an overlay folder only if values differ. Update `helm/charts/README.md` if the profile's chart list changes.
-14. **Verify.** Run `tests/check.sh charts` (`helm lint`/`helm template` with each profile overlay) and `tests/check.sh cases`. Add or update cases in `tests/charts/<chart>/` in the same change: `fail-*.yaml` with `# expect: <error text>` for each new `required`, `fail`, or schema rule, and `pass-*.yaml` with `# expect: <rendered text>` for new values and overlay behavior. Do not deploy unless the user asks.
+    - Look up the current chart with `helm show chart`; skip ones marked `deprecated: true` (Grafana's moved to `grafana-community`). Prefer an OCI repository. An HTTPS repository must be registered before `helm dependency build`, so its `scripts/install.sh` runs `helm repo add` when it is missing (see `grafana-alloy`).
+    - Set `fullnameOverride` so Service names are stable for other charts, and keep upstream data on StatefulSet claims.
+    - A UI gets this chart's own `templates/ingress.yaml` with `host` and `ingress.tls`/`auth`/`backend`, not the upstream Ingress (see `prometheus`, `longhorn`).
+    - Upstream components stay in the release namespace; values cannot move one part elsewhere.
+13. **Several resources in one template file.** Put all `required` checks at the top, then each resource, with `---` on its own line. A `-}}` or `{{-` right before `---` glues two documents into one, and Helm silently keeps only the last; `check.sh` flags it.
+14. **The homelab's own apps.** They are aliases of the `homelab-*` base charts (`homelab-static-web-app`, `homelab-cron-job`, `homelab-shared-pvc`) in the `homelab` chart, as `file://` dependencies. A subchart cannot read its parent's files: the `homelab` chart keeps them in `static-assets/` and `scripts/`, renders ConfigMaps from them, and the base charts mount those through `filesConfigMap` and `scriptConfigMap`. Changing an alias needs `helm dependency update` (it is in `Chart.lock`).
+15. **Deploying it.** Add the chart to the profile's `deploy-set.json` in dependency order. Do this only when the chart is implemented, and add an overlay folder only if values differ. Update `helm/charts/README.md` if the profile's chart list changes.
+16. **Verify.** Run `tests/check.sh charts` (`helm lint`/`helm template` with each profile overlay) and `tests/check.sh cases`. Add or update cases in `tests/helm/charts/<chart>/` in the same change: `fail-*.yaml` with `# expect: <error text>` for each new `required`, `fail`, or schema rule, and `pass-*.yaml` with `# expect: <rendered text>` for new values and overlay behavior. A schema error names the value's path (`/grafana/persistence/type`); use it as the expected text. Do not deploy unless the user asks.
 
 ## Deployment profiles
 
@@ -51,6 +57,7 @@ Follow the layout the existing charts use (`pgbouncer`, `pgadmin`, and `traefik`
 - `deploy-set.json` has `defaults.helmArgs` and an ordered `releases` list. Each entry is `{ "chart": "...", "helmArgs": [...], "values": "..." }`; only `chart` is required.
 - `deploy.sh` reads that file and runs each `helm/charts/<chart>/scripts/install.sh`. It differs per profile and needs `jq`.
 - Other profiles are separate targets. Never deploy them automatically.
+- Moving resources to another release (as the homepage moved into `homelab`): Helm does not adopt resources another release owns, so uninstall the old release first. A release left `pending-install` or `failed` by an interrupted run must be uninstalled before the next one.
 
 ## Before changing a cluster
 
@@ -68,10 +75,16 @@ Check the request path one layer at a time:
 3. Confirm the URL scheme and port match the entrypoint (`https://<host>:8443/` or `http://<host>:8080/`). For a certificate warning, check `kubectl get certificate -A` (READY), that the host is in the Ingress `spec.tls`, and that the client trusts `.local/homelab-ca/ca.crt`. Traefik's own default certificate means it found no matching Secret.
 4. Check the application pod and logs only after the request has reached the correct Ingress route.
 
+A pod stuck in `ContainerCreating` with `FailedMount ... not found` means a ConfigMap or Secret it mounts is missing: compare `helm get manifest <release>` with what exists in the cluster.
+
 For a temporary HTTP check without changing DNS, follow the profile README's `curl --resolve` examples. A Traefik 404 usually means no route matched the Host/path/entrypoint; it does not by itself prove the application is down. A browser DNS NXDOMAIN means resolution failed before Kubernetes was reached.
 
 ## Storage and app relationships
 
 - The UTM profile's `homelab-pvc-storage` class maps to MicroK8s hostpath storage and is created by the platform chart from the profile overlay. A PVC stuck with "storageclass not found" usually means the platform overlay was not applied.
 - PostgreSQL is the database backend, PgBouncer is its connection pooler for apps, and pgAdmin is a browser client that connects to PostgreSQL directly (admin sessions do not work well through a pooler). Verify each service and namespace rather than treating the stack as a single release.
+- Data one workload owns lives on its StatefulSet claim, which outlives the release. `homelab-shared-pvc` is only for files several workloads share (`ReadWriteMany` on Longhorn in the RKE2 profile).
+- Longhorn runs in `hlab-storage` (it needs `privileged`); its `longhorn` StorageClass serves claims in any namespace.
+- Telemetry retention is set in Prometheus, Loki, and Tempo. The `homelab` cleanup job deletes only Kubernetes leftovers (old Failed pods and finished Jobs), never their data.
+- `hlab-observability` is `baseline`: no `hostPath` or host namespaces. Alloy reads pod logs through the API, and node-exporter runs in the `privileged` `hlab-observability-agents`.
 - Keep replicas at one for the current single-node learning environment unless the user explicitly chooses a different topology.

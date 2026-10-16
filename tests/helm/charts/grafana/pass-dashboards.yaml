@@ -1,0 +1,5 @@
+# expect: name: grafana-dashboards
+# expect: nodes.json:
+# expect: "uid": "homelab-workloads"
+# expect: path: /var/lib/grafana/dashboards/homelab
+# expect: "uid": "homelab-traefik"

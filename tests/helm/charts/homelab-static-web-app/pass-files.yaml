@@ -1,0 +1,8 @@
+# expect: style.css: |
+# expect: name: site-files
+# expect: checksum/content:
+name: site
+host: site.homelab.com
+files:
+  style.css: |
+    body { font-family: sans-serif; }

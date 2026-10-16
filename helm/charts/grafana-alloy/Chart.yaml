@@ -1,0 +1,16 @@
+apiVersion: v2
+name: grafana-alloy
+description: Grafana Alloy (upstream grafana chart as a pinned dependency), collects pod logs and OTLP telemetry for Loki, Tempo, and Prometheus.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 1.20.1
+
+# The upstream chart is fetched by scripts/install.sh (helm dependency build, pinned by
+# Chart.lock). The pipeline is in config/config.alloy, rendered by templates/configmap.yaml.
+dependencies:
+  - name: alloy
+    version: 1.13.1
+    repository: https://grafana.github.io/helm-charts

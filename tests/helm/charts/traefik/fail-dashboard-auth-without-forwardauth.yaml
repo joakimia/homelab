@@ -1,0 +1,3 @@
+# expect: dashboard.auth.middleware authelia@file needs forwardAuth.enabled
+forwardAuth:
+  enabled: false

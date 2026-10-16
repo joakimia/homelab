@@ -14,8 +14,15 @@ packages:
   - curl
   - jq
   - unattended-upgrades
+  # Longhorn: iSCSI for its block devices, NFS for ReadWriteMany volumes.
+  - open-iscsi
+  - nfs-common
 
 write_files:
+  # Longhorn attaches volumes over iSCSI; load the module at every boot.
+  - path: /etc/modules-load.d/longhorn.conf
+    content: |
+      iscsi_tcp
   - path: /etc/rancher/rke2/config.yaml
     permissions: '0600'
     content: |
@@ -34,7 +41,13 @@ runcmd:
   - [sed, -i, '/[[:space:]]swap[[:space:]]/ s/^[^#]/#&/', /etc/fstab]
 
 
-  # Step 2: Install RKE2
+  # Step 2: Prepare the node for Longhorn
+  # Load iscsi_tcp now (modules-load.d covers reboots) and run the iSCSI daemon.
+  - [modprobe, iscsi_tcp]
+  - [systemctl, enable, --now, iscsid]
+
+
+  # Step 3: Install RKE2
   # Pinned versions. RKE2 comes from its versioned installer (checked here), which verifies the
   # release tarball itself; Helm and k9s are exact releases checked against the SHA-256 recorded
   # here. To upgrade, change the version and checksums from the release pages.
@@ -55,11 +68,13 @@ runcmd:
     rm -f /tmp/rke2-install.sh
 
 
-  # Step 3: Start the RKE2 server
+  # Step 4: Start the RKE2 server
+  # A new cluster, or another server of an existing one when install.sh --join has written
+  # config.yaml.d/50-join.yaml.
   - [systemctl, enable, --now, rke2-server.service]
 
 
-  # Step 4: Install Helm and k9s, and link kubectl
+  # Step 5: Install Helm and k9s, and link kubectl
   - |
     set -e
     # Set versions and architecture-specific checksums
@@ -93,7 +108,7 @@ runcmd:
   - [ln, -sf, /var/lib/rancher/rke2/bin/kubectl, /usr/local/bin/kubectl]
 
 
-  # Step 5: Wait for the API and write the debian user's kubeconfig
+  # Step 6: Wait for the API and write the debian user's kubeconfig
   - |
     set -e
     timeout 600 sh -c 'until /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes >/dev/null 2>&1; do sleep 5; done'
@@ -101,7 +116,7 @@ runcmd:
   - [install, -o, debian, -g, debian, -m, '0600', /etc/rancher/rke2/rke2.yaml, /home/debian/.kube/config]
 
 
-  # Step 6: Basic hardening (work in progress: SSH and security updates only)
+  # Step 7: Basic hardening (work in progress: SSH and security updates only)
   - |
     set -e
     # SSH: no root login, few attempts per connection, no X11 forwarding. Files in
@@ -128,6 +143,6 @@ runcmd:
     printf 'APT::Periodic::Update-Package-Lists "1";\nAPT::Periodic::Unattended-Upgrade "1";\n' > /etc/apt/apt.conf.d/20auto-upgrades
 
 
-  # Step 7: Print the effective hardening settings to /var/log/cloud-init-output.log
+  # Step 8: Print the effective hardening settings to /var/log/cloud-init-output.log
   - [sh, -c, 'sshd -T | grep -E "^(permitrootlogin|maxauthtries|x11forwarding|passwordauthentication|kbdinteractiveauthentication) "']
   - [sh, -c, 'apt-config dump | grep -E "^(APT::Periodic::Unattended-Upgrade|Unattended-Upgrade::Automatic-Reboot|Unattended-Upgrade::Origins-Pattern::) "']

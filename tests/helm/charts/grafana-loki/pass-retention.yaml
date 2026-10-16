@@ -1,0 +1,7 @@
+# expect: retention_period: 24h
+# expect: retention_enabled: true
+# expect: storageClassName: homelab-pvc-storage
+loki:
+  loki:
+    limits_config:
+      retention_period: 24h

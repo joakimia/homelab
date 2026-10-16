@@ -1,0 +1,7 @@
+# The MicroK8s overlay: Authelia in front, no hostless rule.
+# expect: traefik.ingress.kubernetes.io/router.middlewares: authelia@file
+homelab-frontend:
+  ingress:
+    catchAll: false
+    auth:
+      enabled: true

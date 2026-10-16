@@ -1,0 +1,6 @@
+# The default alert rules end up in the server ConfigMap, with Prometheus templates left as they are.
+# expect: alerting_rules.yml:
+# expect: alert: PodCrashLooping
+# expect: alert: NodeDiskAlmostFull
+# expect: alert: TraefikHighErrorRate
+# expect: summary: '{{ $labels.namespace }}/{{ $labels.pod }} has not been running for

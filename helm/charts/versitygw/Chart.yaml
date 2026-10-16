@@ -1,0 +1,9 @@
+apiVersion: v2
+name: platform
+description: Shared namespaces and baseline network policies for the homelab cluster.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 1.0.0

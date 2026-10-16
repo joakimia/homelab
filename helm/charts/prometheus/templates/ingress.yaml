@@ -1,0 +1,53 @@
+{{- $_ := required "host is required" .Values.host -}}
+{{- $_ := required "ingress settings are required" .Values.ingress -}}
+{{- $_ := required "ingress.className is required" .Values.ingress.className -}}
+{{- $_ := required "ingress.tls settings are required" .Values.ingress.tls -}}
+{{- if .Values.ingress.tls.enabled }}
+{{- $_ := required "ingress.tls.clusterIssuer is required when ingress.tls.enabled is true" .Values.ingress.tls.clusterIssuer -}}
+{{- end }}
+{{- $_ := required "ingress.auth settings are required" .Values.ingress.auth -}}
+{{- if .Values.ingress.auth.enabled }}
+{{- $_ := required "ingress.auth.middleware is required when ingress.auth.enabled is true" .Values.ingress.auth.middleware -}}
+{{- if not .Values.ingress.tls.enabled }}
+{{- fail "ingress.auth.enabled needs ingress.tls.enabled: the login cookie only works over HTTPS" -}}
+{{- end }}
+{{- end }}
+{{- $_ := required "ingress.backend settings are required" .Values.ingress.backend -}}
+{{- $_ := required "ingress.backend.service is required" .Values.ingress.backend.service -}}
+{{- $_ := required "ingress.backend.port is required" .Values.ingress.backend.port -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.ingress.backend.service }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: prometheus
+  {{- if or .Values.ingress.tls.enabled .Values.ingress.auth.enabled }}
+  annotations:
+    {{- if .Values.ingress.tls.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.clusterIssuer | quote }}
+    {{- end }}
+    {{- if .Values.ingress.auth.enabled }}
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Values.ingress.auth.middleware }}
+    {{- end }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.host | quote }}
+      secretName: {{ .Values.ingress.backend.service }}-tls
+  {{- end }}
+  rules:
+    - host: {{ .Values.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.ingress.backend.service }}
+                port:
+                  number: {{ .Values.ingress.backend.port }}

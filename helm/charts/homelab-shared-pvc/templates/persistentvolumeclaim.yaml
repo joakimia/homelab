@@ -1,0 +1,23 @@
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "storageClassName is required" .Values.storageClassName -}}
+{{- $_ := required "accessModes is required" .Values.accessModes -}}
+{{- $_ := required "size is required" .Values.size -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.name }}
+  {{- if .Values.keep }}
+  annotations:
+    helm.sh/resource-policy: keep
+  {{- end }}
+spec:
+  storageClassName: {{ .Values.storageClassName }}
+  accessModes:
+    {{- toYaml .Values.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.size }}

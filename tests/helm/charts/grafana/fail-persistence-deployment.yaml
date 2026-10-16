@@ -1,0 +1,5 @@
+# A Deployment's claim would be deleted with the release.
+# expect: /grafana/persistence/type
+grafana:
+  persistence:
+    type: pvc

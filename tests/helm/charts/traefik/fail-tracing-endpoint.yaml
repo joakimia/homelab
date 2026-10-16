@@ -1,0 +1,3 @@
+# expect: /tracing/endpoint
+tracing:
+  endpoint: http://alloy:4317
