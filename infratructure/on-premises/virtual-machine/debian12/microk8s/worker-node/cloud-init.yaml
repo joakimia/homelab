@@ -40,14 +40,13 @@ runcmd:
 
   # Step 3: Install MicroK8s
   # Pinned to the control plane's minor-version snap track (patch updates through snap refresh).
-  # A worker has no API server or kubeconfig of its own: use kubectl, Helm, and k9s on the
-  # control plane or the Mac. install.sh --join joins it to a cluster.
   - [snap, install, microk8s, --classic, --channel=1.36/stable]
 
 
-  # Step 4: Wait for MicroK8s and give the debian user access
+  # Step 4: Wait for MicroK8s system files, give user access, and STOP the standalone daemon
   - [usermod, -aG, microk8s, debian]
-  - [/snap/bin/microk8s, status, --wait-ready]
+  - [snap, wait, system, seed.loaded]
+  - [/snap/bin/microk8s, stop]
 
 
   # Step 5: Basic hardening (work in progress: SSH and security updates only)

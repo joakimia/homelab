@@ -268,9 +268,17 @@ join_microk8s() {
   [[ -n "$node_ip" && -n "$cp_ip" ]] || { echo "Could not find the IPv4 addresses of $target and $join_target" >&2; exit 1; }
   [[ "$node_name" != "$cp_name" ]] || { echo "Both machines are named $node_name; node names must be unique." >&2; exit 1; }
   echo "Node $node_name ($node_ip), control plane $cp_name ($cp_ip)."
+
+  # ==================== ADD THESE TWO LINES HERE ====================
+  echo "Opening port 25000 on both cluster hosts..."
+  ssh "${ssh_opts[@]}" -t "$join_target" "sudo ufw allow 25000/tcp && sudo ufw reload" 2>/dev/null || true
+  ssh "${ssh_opts[@]}" -t "$target" "sudo ufw allow 25000/tcp && sudo ufw reload" 2>/dev/null || true
+  # ==================================================================
+
   check_reachable "$cp_ip" 25000
 
   remote_command="$(declare -f set_hosts_entry prepare_join); prepare_join '$node_name' '$node_ip' '$cp_ip' '$url_file' '${join_target%@*}'"
+
   echo "Creating a join token on $join_target. Enter its sudo password if prompted."
   ssh "${ssh_opts[@]}" -t "$join_target" "sudo bash -c $(printf '%q' "$remote_command")"
   url=$(ssh "${ssh_opts[@]}" "$join_target" "cat '$url_file' && rm -f '$url_file'")
