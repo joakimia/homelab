@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Provisions a Debian 12 machine with a NoCloud cloud-init seed: a Kubernetes node from
+# Provisions a Debian 13 machine with a NoCloud cloud-init seed: a Kubernetes node from
 # <distro>/<role>/cloud-init.yaml (distro: microk8s or rke2), or the jumpbox from
 # jumpbox/cloud-init.yaml (no role).
 #
@@ -20,7 +20,7 @@
 #       sudo password on both nodes.
 #       MicroK8s: adds both nodes to each other's /etc/hosts, creates a one-time join token on the
 #       control plane (valid 10 minutes), and runs microk8s join after provisioning.
-#       RKE2 (work in progress): writes the server URL and the cluster's token to
+#       RKE2: writes the server URL and the cluster's token to
 #       /etc/rancher/rke2/config.yaml.d/50-join.yaml before provisioning, so the seed starts the
 #       service already joined. An RKE2 control plane cannot use --join-only: it has started a
 #       cluster of its own, so provision it again with --join.
@@ -58,7 +58,7 @@ check_seed() {
   fi
   case "$1" in
     microk8s) prefix=homelab ;;
-    rke2) prefix=homelab-rke2 ;;
+    rke2) prefix=homelab-k8s-node ;;
     *) echo "Unknown distro: $1" >&2; usage ;;
   esac
   case "$2" in
@@ -117,6 +117,7 @@ render_seed() {
   cat > "$out_dir/meta-data" <<EOF
 instance-id: $hostname
 local-hostname: $hostname
+dsmode: net
 EOF
 }
 
@@ -143,6 +144,14 @@ apply_seed() {
 
   install -d -m 0755 "$seed_dir"
   install -m 0644 "$seed_upload/user-data" "$seed_upload/meta-data" "$seed_dir/"
+
+  # Proxmox also exposes its own NoCloud CD-ROM. Pin this run to the staged seed so its
+  # user-data is not replaced by the hypervisor's generic cloud-init user-data.
+  cat > /etc/cloud/cloud.cfg.d/99-homelab-seed.cfg <<'CONFIG'
+datasource:
+  NoCloud:
+    seedfrom: file:///var/lib/cloud/seed/nocloud/
+CONFIG
 
   echo "Running cloud-init with the NoCloud seed..."
   cloud-init clean --logs
@@ -305,14 +314,14 @@ export_rke2_token() {
 # the drop-in that rke2-server or rke2-agent reads when it starts. Removes token_file.
 write_rke2_join() {
   set -Eeuo pipefail
-  local server=$1 token_file=$2 dir=/etc/rancher/rke2/config.yaml.d
+  local server=$1 token_file=$2 node_name=$3 dir=/etc/rancher/rke2/config.yaml.d
   # shellcheck disable=SC2064 # expand now: token_file is local and gone when the trap fires
   trap "rm -f '$token_file'" EXIT
   [[ -s "$token_file" ]] || { echo "No join token received." >&2; exit 1; }
   install -d -m 0755 /etc/rancher/rke2 "$dir"
   umask 077
-  printf 'server: %s\ntoken: %s\n' "$server" "$(cat "$token_file")" > "$dir/50-join.yaml"
-  echo "Wrote $dir/50-join.yaml (server $server)."
+  printf 'server: %s\ntoken: %s\nnode-name: %s\n' "$server" "$(cat "$token_file")" "$node_name" > "$dir/50-join.yaml"
+  echo "Wrote $dir/50-join.yaml (server $server, node-name $node_name)."
 }
 
 # Before provisioning (or for --join-only), gives target the join settings for join_target's
@@ -332,7 +341,7 @@ stage_rke2_join() {
   token=$(ssh "${ssh_opts[@]}" "$join_target" "cat '$token_file' && rm -f '$token_file'")
 
   ssh "${ssh_opts[@]}" "$target" "umask 077 && cat > '$token_file'" <<< "$token"
-  remote_command="$(declare -f write_rke2_join); write_rke2_join 'https://$cp_ip:9345' '$token_file'"
+  remote_command="$(declare -f write_rke2_join); write_rke2_join 'https://$cp_ip:9345' '$token_file' '$node_name'"
   echo "Writing the join settings on $target. Enter its sudo password if prompted."
   ssh "${ssh_opts[@]}" -t "$target" "sudo bash -c $(printf '%q' "$remote_command")"
 }

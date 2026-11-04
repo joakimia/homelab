@@ -1,17 +1,17 @@
-# Debian 12 nodes with cloud-init
+# Debian 13 nodes with cloud-init
 
-One script provisions Debian 12 VMs or machines: Kubernetes nodes and the jumpbox in front of them. Each folder holds a NoCloud seed (`cloud-init.yaml`).
+One script provisions Debian 13 VMs or machines: Kubernetes nodes and the jumpbox in front of them. Each folder holds a NoCloud seed (`cloud-init.yaml`).
 
 ```text
 install.sh                                                   # the only script; macOS or Linux
 microk8s/{control-plane-node,worker-node}/cloud-init.yaml    # current UTM learning cluster
-rke2/{control-plane-node,worker-node}/cloud-init.yaml        # work in progress, later on hardware
+rke2/{control-plane-node,worker-node}/cloud-init.yaml        # Proxmox development cluster
 jumpbox/cloud-init.yaml                                      # work in progress: tools, registry
 ```
 
 ## Before you start
 
-Install Debian 12 with a `debian` user that can use `sudo` (leave the root password empty in the installer), the OpenSSH server, and network access. If the new machine reuses an old IP, remove the stale host key on the Mac first: `ssh-keygen -R <ip>`.
+Install Debian 13 with a `debian` user that can use `sudo` (leave the root password empty in the installer), the OpenSSH server, and network access. If the new machine reuses an old IP, remove the stale host key on the Mac first: `ssh-keygen -R <ip>`.
 
 ## Usage
 
@@ -20,7 +20,7 @@ Install Debian 12 with a `debian` user that can use `sudo` (leave the root passw
 ./install.sh microk8s worker-node debian@<ip> [hostname]           # default homelab-wk0
 ./install.sh --join debian@<cp-ip> <distro> <role> debian@<ip> [hostname]  # provision and join
 ./install.sh --join-only debian@<cp-ip> <distro> <role> debian@<ip>        # join a provisioned node
-./install.sh rke2 control-plane-node debian@<ip> [hostname]        # default homelab-rke2-cp0
+./install.sh rke2 control-plane-node debian@<ip> [hostname]        # default homelab-k8s-node-cp0
 ./install.sh jumpbox debian@<ip> [hostname]                        # default homelab-jumpbox
 ./install.sh --iso <microk8s|rke2> <role> [hostname] [output.iso]  # seed ISO only
 ./install.sh --iso jumpbox [hostname] [output.iso]
@@ -32,7 +32,7 @@ Over SSH (the default), `install.sh`:
 2. copies both to the machine;
 3. installs `cloud-init` there if it is missing, stops it from managing networking (the installer's DHCP setup stays), stages the seed, and runs it;
 4. for the jumpbox only, copies the bundle (this folder and `helm/`) to `~/homelab-bundle`;
-5. with `--join` or `--join-only`, joins the node to the cluster of `<cp-ip>`; see [MicroK8s](microk8s/README.md#join-nodes-to-a-cluster) and [RKE2](rke2/README.md#join-nodes-to-a-cluster) (work in progress).
+5. with `--join` or `--join-only`, joins the node to the cluster of `<cp-ip>`; see [MicroK8s](microk8s/README.md#join-nodes-to-a-cluster) and [RKE2](rke2/README.md#join-nodes-to-a-cluster).
 
 You type the SSH password once and the sudo password once. After that, SSH works with the key. The key is the first of `~/.ssh/id_ed25519.pub`, `id_ecdsa.pub`, and `id_rsa.pub`; choose another with `HOMELAB_SSH_PUBLIC_KEY=/path/to/key.pub`.
 

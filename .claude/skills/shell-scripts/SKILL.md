@@ -9,7 +9,7 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
 
 | Kind | Reference | Runs on |
 |---|---|---|
-| Multi-mode entry point | `infratructure/on-premises/virtual-machine/debian12/install.sh` | Mac or Linux host, remote code over SSH |
+| Multi-mode entry point | `infratructure/on-premises/virtual-machine/debian13/install.sh` | Mac or Linux host, remote code over SSH |
 | Profile deploy loop | `helm/deployment/dev/local-microk8s-cluster-dev/deploy.sh` | Mac, or the node with `--local` |
 | Bundle and run over SSH | `helm/deployment/dev/local-microk8s-cluster-dev/install.sh` | Mac |
 | Single chart installer | `helm/charts/postgres/scripts/install.sh` | wherever `helm`/`kubectl` work |
@@ -20,7 +20,7 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
 ## Keep the number of scripts small
 
 - **Add a mode, not a script.** A folder has at most the entry points that already exist there:
-  - provisioning: one `debian12/install.sh`
+  - provisioning: one `debian13/install.sh`
   - Helm profile: `install.sh` and `deploy.sh`
   - chart: `scripts/install.sh`, plus scripts a chart ships into a pod (`homelab/scripts/`)
 - A new capability becomes a function plus a flag or mode in the existing script, for example `--iso`, `--kubeconfig`, `--local`, or the `jumpbox` mode.
@@ -75,7 +75,7 @@ Use this skill whenever you add, change, or review a `.sh` file or a cloud-init 
 
 ## Checks before you finish
 
-- Update `tests/check.sh` with the script: a new entry point goes into `check_usage`, a new check into its own group. A new provisioning `install.sh` mode, rule, or message gets a case in `tests/tests/infratructure/on-premises/virtual-machine/debian12/`; a function sent to a node gets assertions in `node_function_tests` (`tests/check.sh nodes`).
+- Update `tests/check.sh` with the script: a new entry point goes into `check_usage`, a new check into its own group. A new provisioning `install.sh` mode, rule, or message gets a case in `tests/tests/infratructure/on-premises/virtual-machine/debian13/`; a function sent to a node gets assertions in `node_function_tests` (`tests/check.sh nodes`).
 - Run `tests/check.sh` (the same checks as CI): `bash -n`, `shellcheck -S warning`, seed checks, chart lint, and usage exits. Fix shellcheck warnings rather than disabling them; when a disable is intentional, add the reason on the same line. Write empty locals as `x=''`, not `x=`.
 - `dash -n` on extracted `runcmd` blocks, for example in a `debian:12` container.
 - Run the usage paths: no arguments and wrong arguments must print usage and exit 2.

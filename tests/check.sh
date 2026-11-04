@@ -16,12 +16,12 @@
 #                          Shared _helpers.tpl files must be identical.
 #   ./check.sh format      .editorconfig basics on files in Git: final newline, no tabs, and no
 #                          trailing whitespace (Markdown excepted); relative Markdown links resolve.
-#   ./check.sh provisioning  Runs the provisioning install.sh for each tests/infratructure/.../debian12/{pass,fail}-*.txt
+#   ./check.sh provisioning  Runs the provisioning install.sh for each tests/infratructure/.../debian13/{pass,fail}-*.txt
 #                          case with stub ssh and scp: the output, the remote calls, the copied
 #                          seed, and any seed ISO must match the case's "# expect" lines.
 #   ./check.sh usage       Entry-point scripts and the base chart installers exit 2 and print
 #                          usage without arguments.
-#   ./check.sh schema      Docker: cloud-init schema (Debian 12's cloud-init) on the user-data
+#   ./check.sh schema      Docker: cloud-init schema (Debian 13's cloud-init) on the user-data
 #                          install.sh renders from each seed.
 #   ./check.sh nodes       Docker: the functions install.sh runs on the nodes, in debian:12 with
 #                          a microk8s stub and fake RKE2 token files.
@@ -34,7 +34,7 @@ export LC_ALL=C  # English messages from bash and tools, whatever the local lang
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/.." && pwd)"
-provisioning_dir="$repo_root/infratructure/on-premises/virtual-machine/debian12"
+provisioning_dir="$repo_root/infratructure/on-premises/virtual-machine/debian13"
 failures=0
 
 usage() {
@@ -435,7 +435,7 @@ check_provisioning() {
 }
 
 # Renders the user-data of every seed through install.sh (stub ssh) and validates it with the
-# cloud-init of Debian 12, the version the nodes run.
+# cloud-init of Debian 13, the version the nodes run.
 check_schema() {
   local file seed tmp dir results
   echo "==> schema"
@@ -572,7 +572,7 @@ check_usage() {
   local file status
   echo "==> usage"
   for file in \
-    "$repo_root/infratructure/on-premises/virtual-machine/debian12/install.sh" \
+    "$repo_root/infratructure/on-premises/virtual-machine/debian13/install.sh" \
     "$repo_root"/helm/deployment/*/*/install.sh \
     "$repo_root"/helm/deployment/*/*/deploy.sh \
     "$repo_root"/helm/charts/homelab-*/scripts/install.sh; do

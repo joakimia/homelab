@@ -1,10 +1,13 @@
 # RKE2: the join settings are on the node before the seed starts the agent.
-# args: --join debian@cp0 rke2 worker-node debian@wk0 homelab-rke2-wk0
+# args: --join debian@cp0 rke2 worker-node debian@wk0 homelab-k8s-node-wk0
 # reply: debian@cp0 cat '.homelab-join- => K10secret::node:agent
+# reply: debian@wk0 hostname => homelab-k8s-node-wk0
 # expect-order: export_rke2_token 'worker-node' '.homelab-join-
 # expect-order: write_rke2_join 'https://192.0.2.10:9345' '.homelab-join-
+# expect: node-name: %s
+# expect: homelab-k8s-node-wk0
 # expect-order: apply_seed
-# expect-order: kubectl wait --for=condition=Ready 'node/homelab-wk0'
-# expect: local-hostname: homelab-rke2-wk0
+# expect-order: kubectl wait --for=condition=Ready 'node/homelab-k8s-node-wk0'
+# expect: local-hostname: homelab-k8s-node-wk0
 # expect-not: K10secret
 # expect-not: systemctl restart rke2-agent

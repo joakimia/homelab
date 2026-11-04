@@ -1,9 +1,9 @@
-# MicroK8s on Debian 12 in UTM
+# MicroK8s on Debian 13 in UTM
 
-NoCloud seeds that turn a fresh Debian 12 VM into a MicroK8s node for the local learning cluster. Provision with the shared [`../install.sh`](../README.md):
+NoCloud seeds that turn a fresh Debian 13 VM into a MicroK8s node for the local learning cluster. Provision with the shared [`../install.sh`](../README.md):
 
 ```sh
-# from infratructure/on-premises/virtual-machine/debian12/
+# from infratructure/on-premises/virtual-machine/debian13/
 ./install.sh microk8s control-plane-node debian@<vm-ip>    # hostname homelab-cp0
 ./install.sh --join debian@<cp0-ip> microk8s worker-node debian@<vm-ip> homelab-wk0
 ```
@@ -20,7 +20,7 @@ Updates Debian, installs the tools below, and adds `debian` to the `microk8s` gr
 | kubectl (control plane) | snap track `1.36/stable`, same minor as MicroK8s |
 | Helm (control plane) | `v4.3.0` from `get.helm.sh`, SHA-256 checked |
 | k9s (control plane) | `v0.51.0` from GitHub, SHA-256 checked |
-| jq, curl, open-iscsi, nfs-common | Debian 12 packages |
+| jq, curl, open-iscsi, nfs-common | Debian 13 packages |
 
 To upgrade, change the MicroK8s track in both `cloud-init.yaml` files (nodes in one cluster run the same minor) and the other pins in the control plane's. For Helm and k9s, also update the `amd64` and `arm64` checksums from the release.
 

@@ -14,14 +14,14 @@ tests/check.sh charts     # or one group: scripts | seeds | charts | cases | for
 | `charts` | all JSON parses, and every chart in every `deploy-set.json` has an executable `scripts/install.sh` and passes `helm lint` and `helm template` with the profile overlay |
 | `cases` | each `helm/charts/<chart>/pass-*.yaml` overlay renders and contains its `# expect:` lines; each `fail-*.yaml` fails with its `# expect:` text; the shared `_helpers.tpl` is identical in every chart |
 | `format` | the [`.editorconfig`](../.editorconfig) basics on files in Git: final newline, no tabs, no trailing whitespace outside Markdown |
-| `provisioning` | each `infratructure/.../debian12/{pass,fail}-*.txt` case runs the provisioning `install.sh` with stub `ssh` and `scp` and checks the output, the remote calls, and the seed it copies or writes to an ISO |
+| `provisioning` | each `infratructure/.../debian13/{pass,fail}-*.txt` case runs the provisioning `install.sh` with stub `ssh` and `scp` and checks the output, the remote calls, and the seed it copies or writes to an ISO |
 | `usage` | entry-point scripts exit 2 with usage when run without arguments |
-| `schema` | Docker: `cloud-init schema` from Debian 12 (the nodes' version) on the user-data `install.sh` renders from each seed; about 30 seconds |
+| `schema` | Docker: `cloud-init schema` from Debian 13 (the nodes' version) on the user-data `install.sh` renders from each seed; about 30 seconds |
 | `nodes` | Docker: the functions `install.sh` runs on the nodes (join, `/etc/hosts`, RKE2 token files), in `debian:12` with a `microk8s` stub |
 
 The default run skips `schema` and `nodes` unless `CI=true`; run them by name when you change seeds or the node functions. CI runs everything on each pull request, on pushes to `main`, and weekly, which catches drift in upstream packages, images, and charts.
 
-The case folders mirror the code they test: `helm/charts/<chart>/` for `helm/charts/<chart>`, and `infratructure/on-premises/virtual-machine/debian12/` for the provisioning `install.sh`.
+The case folders mirror the code they test: `helm/charts/<chart>/` for `helm/charts/<chart>`, and `infratructure/on-premises/virtual-machine/debian13/` for the provisioning `install.sh`.
 
 The checks touch no VM or cluster and need no secrets. Locally you need `jq`, `helm`, `dash` (included in macOS), and `ruby` or `python3` with PyYAML. Install `shellcheck` too (`brew install shellcheck`); without it, that part is skipped locally, while CI requires it. The `--iso` cases need `hdiutil` (macOS) or `xorriso`, and are skipped locally without them.
 
@@ -37,7 +37,7 @@ env:
 
 ## Provisioning cases
 
-Add a case with every `install.sh` mode, rule, or failure message. Example `infratructure/on-premises/virtual-machine/debian12/pass-join-microk8s-worker.txt`:
+Add a case with every `install.sh` mode, rule, or failure message. Example `infratructure/on-premises/virtual-machine/debian13/pass-join-microk8s-worker.txt`:
 
 ```text
 # args: --join debian@cp0 microk8s worker-node debian@wk0

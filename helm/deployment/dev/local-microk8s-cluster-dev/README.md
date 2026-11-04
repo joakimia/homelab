@@ -5,17 +5,17 @@ Deploys platform, cert-manager with the `homelab-ca` issuer, Longhorn (single no
 Before deploying, on a VM provisioned earlier:
 
 - Give it 8 GiB of memory: the observability charts request about 1 GiB, with limits of about 4.3 GiB.
-- Install the Longhorn prerequisites (`open-iscsi`, `nfs-common`, `iscsid`); see the [MicroK8s seed README](../../../../infratructure/on-premises/virtual-machine/debian12/microk8s/README.md#longhorn-on-an-existing-vm).
+- Install the Longhorn prerequisites (`open-iscsi`, `nfs-common`, `iscsid`); see the [MicroK8s seed README](../../../../infratructure/on-premises/virtual-machine/debian13/microk8s/README.md#longhorn-on-an-existing-vm).
 - Run `sudo microk8s enable metrics-server` on the VM, for `kubectl top` and the CPU/MEM columns in k9s (newer seeds do this).
 - Remove the old `homepage` release if it exists (`helm uninstall homepage -n hlab-frontend-apps`); see the [homelab chart](../../../charts/homelab/README.md).
 
 ## Quick start
 
-Provision the VM first ([guide](../../../../infratructure/on-premises/virtual-machine/debian12/README.md)), then run this from the repository root on the Mac:
+Provision the VM first ([guide](../../../../infratructure/on-premises/virtual-machine/debian13/README.md)), then run this from the repository root on the Mac:
 
 ```sh
 VM_IP=192.168.5.57      # the control plane; in the VM console: ip -4 -o addr show dev enp0s1
-infratructure/on-premises/virtual-machine/debian12/install.sh microk8s control-plane-node "debian@$VM_IP"
+infratructure/on-premises/virtual-machine/debian13/install.sh microk8s control-plane-node "debian@$VM_IP"
 helm/deployment/dev/local-microk8s-cluster-dev/install.sh "debian@$VM_IP"
 curl --cacert .local/homelab-ca/ca.crt --resolve "homepage.homelab.com:8443:$VM_IP" https://homepage.homelab.com:8443/
 ```
