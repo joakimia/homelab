@@ -17,7 +17,7 @@ tests/check.sh charts     # or one group: scripts | seeds | charts | cases | for
 | `provisioning` | each `infratructure/.../debian13/{pass,fail}-*.txt` case runs the provisioning `install.sh` with stub `ssh` and `scp` and checks the output, the remote calls, and the seed it copies or writes to an ISO |
 | `usage` | entry-point scripts exit 2 with usage when run without arguments |
 | `schema` | Docker: `cloud-init schema` from Debian 13 (the nodes' version) on the user-data `install.sh` renders from each seed; about 30 seconds |
-| `nodes` | Docker: the functions `install.sh` runs on the nodes (join, `/etc/hosts`, RKE2 token files), in `debian:12` with a `microk8s` stub |
+| `nodes` | Docker: the functions `install.sh` runs on the nodes (join, `/etc/hosts`, RKE2 token files), in `debian:13` with a `microk8s` stub |
 
 The default run skips `schema` and `nodes` unless `CI=true`; run them by name when you change seeds or the node functions. CI runs everything on each pull request, on pushes to `main`, and weekly, which catches drift in upstream packages, images, and charts.
 
