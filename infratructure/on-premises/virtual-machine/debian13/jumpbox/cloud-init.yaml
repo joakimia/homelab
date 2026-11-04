@@ -19,7 +19,7 @@ packages:
   - openssh-client
   - xorriso          # install.sh --iso on the jumpbox
   - skopeo           # copy images into the local registry without a container runtime
-  - docker-registry  # CNCF distribution registry from Debian 12, systemd service on :5000
+  - docker-registry  # CNCF distribution registry from Debian 13, systemd service on :5000
   - unattended-upgrades
 
 runcmd:

@@ -19,14 +19,14 @@ All charts the homelab can use. A cluster profile in `../deployment/<env>/<clust
 | [`grafana-alloy`](grafana-alloy/README.md) | `hlab-observability` | Upstream Alloy: pod logs and Kubernetes events to Loki, OTLP to Prometheus, Loki, and Tempo. |
 | [`grafana`](grafana/README.md) | `hlab-observability` | Upstream Grafana, `https://grafana.homelab.com:8443/`, with the three data sources and the Homelab dashboards (nodes, workloads, logs and events). |
 
-The [RKE2 development profile](../deployment/dev/homelab-rke2-cluster-dev/README.md) (work in progress) deploys the same charts plus:
+The [RKE2 development profile](../deployment/dev/homelab-rke2-cluster-dev/README.md) is deployed on Proxmox and adds:
 
 | Chart | Namespace | What it does |
 |---|---|---|
 | [`local-path-provisioner`](local-path-provisioner/README.md) | `hlab-storage` | Node-local volumes for `homelab-pvc-storage` on clusters without a storage addon. |
-| [`longhorn`](longhorn/README.md) | `hlab-storage` | Upstream Longhorn, opt-in `longhorn` StorageClass (work in progress). |
+| [`longhorn`](longhorn/README.md) | `hlab-storage` | Upstream Longhorn, opt-in `longhorn` StorageClass with two replicas. |
 
-The observability charts and `homelab` pass `tests/check.sh` but have not been deployed yet. The other directories are scaffolds and are not deployed.
+The UTM and Proxmox profiles deploy the charts listed above. The other directories are scaffolds and are not deployed.
 
 ## Base charts
 

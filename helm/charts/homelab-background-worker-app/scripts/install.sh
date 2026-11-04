@@ -5,6 +5,11 @@
 set -euo pipefail
 export LC_ALL=C  # English messages from bash and tools, whatever the local language
 
+if [[ $# -eq 0 ]]; then
+  echo "Usage: $0 [helm arguments...]" >&2
+  exit 2
+fi
+
 chart_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 for command in helm kubectl; do

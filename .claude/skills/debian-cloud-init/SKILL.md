@@ -1,28 +1,28 @@
 ---
 name: debian-cloud-init
-description: Provision or troubleshoot Debian 12 machines (Kubernetes nodes and the jumpbox; MicroK8s in UTM now, RKE2 on hardware later) using NoCloud cloud-init seeds and the shared install.sh over SSH.
+description: Provision or troubleshoot Debian 13 machines (Kubernetes nodes and the jumpbox; MicroK8s in UTM now, RKE2 on hardware later) using NoCloud cloud-init seeds and the shared install.sh over SSH.
 ---
 
-# Debian 12 with NoCloud cloud-init
+# Debian 13 with NoCloud cloud-init
 
 Use this skill when you provision a fresh Debian machine, change a cloud-init seed, or diagnose provisioning over SSH. The flow is the same on a UTM VM and on hardware. Only the network details differ (see the UTM section).
 
 ## Workflow
 
-1. Read `AGENTS.md`, `infratructure/on-premises/virtual-machine/debian12/README.md`, and the README for the seed (`microk8s/`, `rke2/`, or `jumpbox/`) first.
+1. Read `AGENTS.md`, `infratructure/on-premises/virtual-machine/debian13/README.md`, and the README for the seed (`microk8s/`, `rke2/`, or `jumpbox/`) first.
 2. Confirm the target address, the Debian user (`debian`, with sudo; the installer's root password left empty), and which seed is being provisioned. Never assume an earlier machine or package installation still exists.
 3. A minimal Debian install may not include cloud-init. Use these commands:
-   - `debian12/install.sh <microk8s|rke2> <role> debian@<ip>` or `install.sh jumpbox debian@<ip>` installs cloud-init over SSH, stages the seed, and runs it.
+   - `debian13/install.sh <microk8s|rke2> <role> debian@<ip>` or `install.sh jumpbox debian@<ip>` installs cloud-init over SSH, stages the seed, and runs it.
    - `install.sh --iso ...` only builds a seed ISO for a machine that already has cloud-init. A seed ISO is not a bootable Debian installer.
 4. Keep the layout:
-   - One shared `debian12/install.sh`, plus `<distro>/<role>/cloud-init.yaml` per node role and `jumpbox/cloud-init.yaml`.
+   - One shared `debian13/install.sh`, plus `<distro>/<role>/cloud-init.yaml` per node role and `jumpbox/cloud-init.yaml`.
    - Put new provisioning steps in the seeds, and new modes or host-side logic in `install.sh`. Do not add helper scripts or a second bootstrap path.
    - Pin tool versions in the seeds (snap tracks, or exact releases with SHA-256 per architecture) and update the README version tables.
    - Host-side code must work on macOS (bash 3.2) and Linux. Generated files, such as seed ISOs, go to the directory the script is run from.
 5. The jumpbox is not a cluster node. It hosts the local registry and receives the provisioning bundle (`~/homelab-bundle`), so nodes can be provisioned from it with the jumpbox's own SSH key.
 6. Ask the operator to type SSH and sudo passwords interactively. Never put passwords in arguments, scripts, logs, or Git. Only the first run needs the SSH password; the seed authorizes the provisioning machine's public key.
 7. After provisioning, check `cloud-init status --long`, `/var/log/cloud-init-output.log`, and, as appropriate, `microk8s status --wait-ready` or `systemctl status rke2-server`, then `kubectl get nodes`, `helm version`, and `k9s version`. Report which checks ran and their results.
-8. For seed changes, run `tests/check.sh seeds` (YAML parsing and `dash -n` on each `runcmd` block; cloud-init runs them with `/bin/sh`, which is dash on Debian) and `tests/check.sh schema` (Docker: Debian 12's `cloud-init schema` on the rendered user-data). A new seed or check belongs in `check.sh` in the same change. Do not provision a machine unless the user asks.
+8. For seed changes, run `tests/check.sh seeds` (YAML parsing and `dash -n` on each `runcmd` block; cloud-init runs them with `/bin/sh`, which is dash on Debian) and `tests/check.sh schema` (Docker: Debian 13's `cloud-init schema` on the rendered user-data). A new seed or check belongs in `check.sh` in the same change. Do not provision a machine unless the user asks.
 
 ## Known pitfalls
 

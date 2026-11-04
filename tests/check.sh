@@ -16,14 +16,14 @@
 #                          Shared _helpers.tpl files must be identical.
 #   ./check.sh format      .editorconfig basics on files in Git: final newline, no tabs, and no
 #                          trailing whitespace (Markdown excepted); relative Markdown links resolve.
-#   ./check.sh provisioning  Runs the provisioning install.sh for each tests/infratructure/.../debian12/{pass,fail}-*.txt
+#   ./check.sh provisioning  Runs the provisioning install.sh for each tests/infratructure/.../debian13/{pass,fail}-*.txt
 #                          case with stub ssh and scp: the output, the remote calls, the copied
 #                          seed, and any seed ISO must match the case's "# expect" lines.
 #   ./check.sh usage       Entry-point scripts and the base chart installers exit 2 and print
 #                          usage without arguments.
-#   ./check.sh schema      Docker: cloud-init schema (Debian 12's cloud-init) on the user-data
+#   ./check.sh schema      Docker: cloud-init schema (Debian 13's cloud-init) on the user-data
 #                          install.sh renders from each seed.
-#   ./check.sh nodes       Docker: the functions install.sh runs on the nodes, in debian:12 with
+#   ./check.sh nodes       Docker: the functions install.sh runs on the nodes, in debian:13 with
 #                          a microk8s stub and fake RKE2 token files.
 #
 # Needs bash, jq, helm, dash, and ruby or python3 with PyYAML. shellcheck is optional
@@ -34,7 +34,7 @@ export LC_ALL=C  # English messages from bash and tools, whatever the local lang
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "$script_dir/.." && pwd)"
-provisioning_dir="$repo_root/infratructure/on-premises/virtual-machine/debian12"
+provisioning_dir="$repo_root/infratructure/on-premises/virtual-machine/debian13"
 failures=0
 
 usage() {
@@ -435,7 +435,7 @@ check_provisioning() {
 }
 
 # Renders the user-data of every seed through install.sh (stub ssh) and validates it with the
-# cloud-init of Debian 12, the version the nodes run.
+# cloud-init of Debian 13, the version the nodes run.
 check_schema() {
   local file seed tmp dir results
   echo "==> schema"
@@ -457,7 +457,7 @@ check_schema() {
     cp "$dir/scp/user-data" "$tmp/user-data/${seed//\//-}.yaml"
   done < <(find "$provisioning_dir" -name cloud-init.yaml | sort)
 
-  results="$(docker run --rm -v "$tmp/user-data:/seeds:ro" debian:12 sh -c '
+  results="$(docker run --rm -v "$tmp/user-data:/seeds:ro" debian:13 sh -c '
     apt-get update -qq >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends cloud-init >/dev/null 2>&1 || { echo "FAIL apt-get install cloud-init"; exit 0; }
     for f in /seeds/*.yaml; do
       if out=$(cloud-init schema --config-file "$f" 2>&1); then echo "ok ${f#/seeds/}"; else echo "FAIL ${f#/seeds/}: $out" | tr "\n" " "; echo; fi
@@ -470,7 +470,7 @@ check_schema() {
   done <<<"$results"
 }
 
-# Runs in a debian:12 container: tests the functions install.sh sends to the nodes, taken from
+# Runs in a debian:13 container: tests the functions install.sh sends to the nodes, taken from
 # the install.sh given, with a microk8s stub. Prints "FAIL <text>" per failed assertion.
 node_function_tests() {
   set -uo pipefail
@@ -541,23 +541,23 @@ STUB
   assert "export_rke2_token fails on a machine that is no RKE2 server" fails export_rke2_token worker-node token debian
 
   echo 'K10abc::server:secret' > token
-  run write_rke2_join https://192.0.2.10:9345 token
+  run write_rke2_join https://192.0.2.10:9345 token homelab-k8s-node-wk0
   cp_file=/etc/rancher/rke2/config.yaml.d/50-join.yaml
-  assert "write_rke2_join writes server and token" test "$(cat "$cp_file")" = "$(printf 'server: https://192.0.2.10:9345\ntoken: K10abc::server:secret')"
+  assert "write_rke2_join writes server, token, and node name" test "$(cat "$cp_file")" = "$(printf 'server: https://192.0.2.10:9345\ntoken: K10abc::server:secret\nnode-name: homelab-k8s-node-wk0')"
   assert "write_rke2_join file is 0600 and owned by root" test "$(stat -c '%a %U' "$cp_file")" = '600 root'
   assert "write_rke2_join removes the token file" test ! -e token
   rm -f "$cp_file"
   : > token
-  assert "write_rke2_join fails on an empty token" fails write_rke2_join https://x:9345 token
+  assert "write_rke2_join fails on an empty token" fails write_rke2_join https://x:9345 token homelab-k8s-node-wk0
   assert "write_rke2_join writes nothing for an empty token" test ! -e "$cp_file"
 }
 
-# Runs node_function_tests in debian:12 against this checkout's install.sh.
+# Runs node_function_tests in debian:13 against this checkout's install.sh.
 check_nodes() {
   local results line
   echo "==> nodes"
   require_docker nodes
-  results="$(docker run --rm -v "$provisioning_dir/install.sh:/install.sh:ro" debian:12 \
+  results="$(docker run --rm -v "$provisioning_dir/install.sh:/install.sh:ro" debian:13 \
     bash -c "$(declare -f node_function_tests); node_function_tests /install.sh" 2>&1)" || fail "nodes: docker run failed"
   while IFS= read -r line; do
     case "$line" in
@@ -572,7 +572,7 @@ check_usage() {
   local file status
   echo "==> usage"
   for file in \
-    "$repo_root/infratructure/on-premises/virtual-machine/debian12/install.sh" \
+    "$repo_root/infratructure/on-premises/virtual-machine/debian13/install.sh" \
     "$repo_root"/helm/deployment/*/*/install.sh \
     "$repo_root"/helm/deployment/*/*/deploy.sh \
     "$repo_root"/helm/charts/homelab-*/scripts/install.sh; do

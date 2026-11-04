@@ -6,7 +6,8 @@
 #
 #   ./deploy.sh debian@<vm-ip>               Default, from the Mac: copy the VM's kubeconfig over
 #                                            SSH to ./.local/<cluster>.kubeconfig and run Helm here.
-#   ./deploy.sh --kubeconfig debian@<vm-ip>  Only refresh .local/<cluster>.kubeconfig (for k9s).
+#   ./deploy.sh --kubeconfig debian@<vm-ip>  Refresh .local/<cluster>.kubeconfig (for k9s/
+#                                            kubectl); adds direct and Mac-over-SSH contexts.
 #   ./deploy.sh --local                      Use the current kubectl context; install.sh runs
 #                                            this on the VM.
 set -euo pipefail
@@ -59,7 +60,30 @@ fetch_kubeconfig() {
   chmod 600 "$temp_file"
   mv "$temp_file" "$config_file"
   trap - EXIT
-  echo "Wrote the kubeconfig for $target to $config_file with context $cluster_name (ignored by Git)."
+  add_mac_ssh_context "$host"
+  echo "Wrote the kubeconfig for $target to $config_file with contexts homelab-server and mac-via-ssh (ignored by Git)."
+}
+
+add_mac_ssh_context() {
+  local host=$1 temp_file current_context source_cluster source_user
+  for command in kubectl jq; do
+    command -v "$command" >/dev/null || { echo "Required command not found: $command" >&2; exit 1; }
+  done
+  current_context="$(KUBECONFIG="$config_file" kubectl config current-context)"
+  source_cluster="$(KUBECONFIG="$config_file" kubectl config view -o jsonpath="{.contexts[?(@.name==\"$current_context\")].context.cluster}")"
+  source_user="$(KUBECONFIG="$config_file" kubectl config view -o jsonpath="{.contexts[?(@.name==\"$current_context\")].context.user}")"
+  [[ -n "$source_cluster" && -n "$source_user" ]] || { echo "Could not identify the kubeconfig cluster and user" >&2; exit 1; }
+
+  temp_file="$config_file.contexts.tmp"
+  KUBECONFIG="$config_file" kubectl config view --raw -o json | jq \
+    --arg cluster "$source_cluster" --arg user "$source_user" --arg host "$host" --arg context "$current_context" '
+      (.clusters[] | select(.name == $cluster).cluster) as $source |
+      .clusters |= map(select(.name != "mac-via-ssh")) + [{name:"mac-via-ssh",cluster:($source + {server:"https://127.0.0.1:16443", "tls-server-name":$host})}] |
+      .contexts |= (map(select(.name != "mac-via-ssh") | if .name == $context then .name = "homelab-server" else . end) + [{name:"mac-via-ssh",context:{cluster:"mac-via-ssh",user:$user}}]) |
+      .["current-context"] = "homelab-server"
+    ' > "$temp_file"
+  chmod 600 "$temp_file"
+  mv "$temp_file" "$config_file"
 }
 
 deploy_releases() {

@@ -1,6 +1,6 @@
-# RKE2 on Debian 12
+# RKE2 on Debian 13
 
-**Work in progress.** These seeds have only been checked for syntax; they have not run on a VM or on hardware yet. RKE2 on physical hardware is the later goal. Define the home LAN's addressing, DNS, and routing for it separately: the UTM VMs' setup does not carry over.
+These seeds provision the Debian 13 RKE2 development cluster on Proxmox. The control plane is `homelab-k8s-node-cp0` (`10.10.10.101`) and the worker is `homelab-k8s-node-wk0` (`10.10.10.102`). Both nodes and the Helm profile have been deployed and verified.
 
 ## What the control-plane seed does
 
@@ -25,21 +25,21 @@ The worker seed installs the Longhorn prerequisites and the RKE2 agent, and star
 
 ## Provision
 
-From `infratructure/on-premises/virtual-machine/debian12/`:
+From `infratructure/on-premises/virtual-machine/debian13/`:
 
 ```sh
-./install.sh rke2 control-plane-node debian@<ip>
+./install.sh rke2 control-plane-node debian@10.10.10.101
 ```
 
 Then check on the node: `cloud-init status --long`, `sudo systemctl status rke2-server`, and `kubectl get nodes` after logging in again.
 
 ## Join nodes to a cluster
 
-Work in progress, not run yet:
+Join the worker to the control plane:
 
 ```sh
-./install.sh --join debian@<cp0-ip> rke2 worker-node debian@<ip> homelab-rke2-wk0
-./install.sh --join debian@<cp0-ip> rke2 control-plane-node debian@<ip> homelab-rke2-cp1
+./install.sh --join debian@10.10.10.101 rke2 worker-node debian@10.10.10.102 homelab-k8s-node-wk0
+./install.sh --join debian@<cp0-ip> rke2 control-plane-node debian@<ip> homelab-k8s-node-cp1
 ./install.sh --join-only debian@<cp0-ip> rke2 worker-node debian@<ip>    # a worker provisioned earlier
 ```
 
@@ -53,7 +53,6 @@ Before the seed runs, `install.sh` reads the token on the control plane (the age
 
 ## Not done yet
 
-- **Storage:** RKE2 has no default StorageClass. The [RKE2 Helm profile](../../../../../helm/deployment/dev/homelab-rke2-cluster-dev/README.md) deploys local-path-provisioner behind `homelab-pvc-storage` (single node only); the [Longhorn chart](../../../../../helm/charts/longhorn/README.md) (work in progress) adds replicated volumes for several nodes.
-- **Joining nodes:** implemented in `install.sh` but not run yet.
-- **LAN networking and DNS:** not defined yet.
-- **Helm profile:** `helm/deployment/dev/homelab-rke2-cluster-dev` exists but has not been deployed yet.
+- **Storage:** RKE2 has no default StorageClass. The [RKE2 Helm profile](../../../../../helm/deployment/dev/homelab-rke2-cluster-dev/README.md) deploys local-path-provisioner behind `homelab-pvc-storage`; the Longhorn chart adds replicated volumes across both nodes.
+- **LAN networking and DNS:** ingress hostnames still need DNS records or client hosts entries; see the [RKE2 profile guide](../../../../../helm/deployment/dev/homelab-rke2-cluster-dev/README.md).
+- **High availability:** this development cluster has one control plane and is not highly available; etcd quorum needs three server nodes.
