@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "host",
+    "ingress",
+    "argo-cd"
+  ],
+  "properties": {
+    "host": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ingress": {
+      "type": "object",
+      "required": [
+        "className",
+        "tls",
+        "backend"
+      ],
+      "properties": {
+        "className": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tls": {
+          "type": "object",
+          "required": [
+            "enabled",
+            "clusterIssuer"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "clusterIssuer": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "backend": {
+          "type": "object",
+          "required": [
+            "service",
+            "port"
+          ],
+          "properties": {
+            "service": {
+              "type": "string",
+              "minLength": 1
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "argo-cd": {
+      "type": "object",
+      "required": [
+        "fullnameOverride",
+        "configs"
+      ],
+      "properties": {
+        "fullnameOverride": {
+          "const": "argocd",
+          "description": "Other charts and the Ingress use the argocd-* Service names."
+        },
+        "configs": {
+          "type": "object",
+          "required": [
+            "params"
+          ],
+          "properties": {
+            "params": {
+              "type": "object",
+              "required": [
+                "server.insecure"
+              ],
+              "properties": {
+                "server.insecure": {
+                  "const": true,
+                  "description": "Traefik terminates TLS and talks plain HTTP to the server."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

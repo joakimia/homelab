@@ -1,0 +1,58 @@
+# Installs one binary from tools_binaries, unless the pinned version is already there.
+- name: Read the installed version of {{ tools_binary.name }}
+  ansible.builtin.command:
+    argv: "{{ tools_binary.version_cmd }}"
+  register: tools_installed
+  changed_when: false
+  failed_when: false
+  check_mode: false  # read-only, so it also runs with --check
+
+# Downloads cannot be simulated, so --check only reports the change.
+- name: Report in check mode that it would install {{ tools_binary.name }}
+  when:
+    - tools_binary.version_text not in tools_installed.stdout | default('')
+    - ansible_check_mode
+  ansible.builtin.debug:
+    msg: "{{ tools_binary.name }}: found '{{ tools_installed.stdout | default('') or 'nothing' }}', would install the pinned release"
+  changed_when: true
+
+- name: Install {{ tools_binary.name }}
+  when:
+    - tools_binary.version_text not in tools_installed.stdout | default('')
+    - not ansible_check_mode
+  become: true
+  block:
+    - name: Create a download folder
+      ansible.builtin.tempfile:
+        state: directory
+      register: tools_download
+
+    - name: Download and verify the SHA-256 of {{ tools_binary.name }}
+      ansible.builtin.get_url:
+        url: "{{ tools_binary.url }}"
+        dest: "{{ tools_download.path }}/{{ tools_binary.url | basename }}"
+        checksum: sha256:{{ tools_binary.sha256 }}
+        mode: "0644"
+
+    - name: Unpack {{ tools_binary.name }}
+      when: tools_binary.member is defined
+      ansible.builtin.unarchive:
+        src: "{{ tools_download.path }}/{{ tools_binary.url | basename }}"
+        dest: "{{ tools_download.path }}"
+        remote_src: true
+        include: ["{{ tools_binary.member }}"]
+
+    - name: Install /usr/local/bin/{{ tools_binary.name }}
+      ansible.builtin.copy:
+        src: "{{ tools_download.path }}/{{ tools_binary.member | default(tools_binary.url | basename) }}"
+        dest: /usr/local/bin/{{ tools_binary.name }}
+        remote_src: true
+        owner: root
+        group: root
+        mode: "0755"
+  always:
+    - name: Remove the download folder
+      when: tools_download.path is defined
+      ansible.builtin.file:
+        path: "{{ tools_download.path }}"
+        state: absent

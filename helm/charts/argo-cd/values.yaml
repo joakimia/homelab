@@ -1,0 +1,78 @@
+host: argocd.homelab.com
+
+ingress:
+  className: traefik
+  # Certificate for host from cert-manager (needs the cert-manager and cert-issuers charts).
+  tls:
+    enabled: true
+    clusterIssuer: homelab-ca
+  # The argo-cd-server Service; the server speaks plain HTTP (server.insecure), Traefik does TLS.
+  backend:
+    service: argocd-server
+    port: 80
+
+# Upstream chart values go under the dependency name.
+argo-cd:
+  # Stable Service names: argocd-server, argocd-repo-server, ...
+  fullnameOverride: argocd
+  # The Applications' resources are tracked by annotation, so resources that Helm installed
+  # before Argo CD (the deploy.sh bootstrap) are adopted in place.
+  configs:
+    cm:
+      application.resourceTrackingMethod: annotation
+      # Read-only anonymous access stays off; log in as admin (argocd-initial-admin-secret).
+      users.anonymous.enabled: "false"
+    params:
+      # TLS ends at Traefik.
+      server.insecure: true
+    # HTTPS Helm repositories that charts in the profiles depend on. Argo CD runs
+    # helm dependency build itself and only knows registered repositories; OCI ones need none.
+    repositories:
+      longhorn:
+        type: helm
+        name: longhorn
+        url: https://charts.longhorn.io
+      grafana:
+        type: helm
+        name: grafana
+        url: https://grafana.github.io/helm-charts
+  # No SSO (Dex) and no notifications for now: Cloudflare Access is in front of the UI.
+  dex:
+    enabled: false
+  notifications:
+    enabled: false
+  controller:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 384Mi
+      limits:
+        memory: 1Gi
+  repoServer:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1Gi
+  server:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+  applicationSet:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+  redis:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 32Mi
+      limits:
+        memory: 128Mi

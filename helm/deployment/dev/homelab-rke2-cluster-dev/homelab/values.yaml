@@ -33,3 +33,7 @@ homelab-frontend:
       url: https://prometheus.joakimia.dev
     traefik:
       url: https://traefik.joakimia.dev
+    argocd:
+      title: Argo CD
+      url: https://argocd.joakimia.dev
+      enabled: true

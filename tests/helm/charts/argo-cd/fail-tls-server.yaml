@@ -1,0 +1,5 @@
+# expect: /argo-cd/configs/params/server.insecure
+argo-cd:
+  configs:
+    params:
+      server.insecure: false

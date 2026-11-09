@@ -1,0 +1,29 @@
+# Checks only: the kubeconfig holds cluster credentials and is copied by hand, not by Ansible.
+- name: Read ~/.kube/config
+  ansible.builtin.slurp:
+    src: "{{ ansible_facts['user_dir'] }}/.kube/config"
+  register: kubeconfig_file
+  failed_when: false
+  no_log: true  # contains client keys
+
+- name: Check that ~/.kube/config exists
+  ansible.builtin.assert:
+    that: kubeconfig_file.content is defined
+    fail_msg: >-
+      {{ ansible_facts['user_dir'] }}/.kube/config is missing on {{ inventory_hostname }}.
+      Copy the RKE2 kubeconfig there with the context {{ kubeconfig_context }}
+      (see helm/deployment/dev/homelab-rke2-cluster-dev/README.md).
+    quiet: true
+
+- name: Check the current context is {{ kubeconfig_context }}
+  vars:
+    kubeconfig_data: "{{ kubeconfig_file.content | b64decode | from_yaml }}"
+  ansible.builtin.assert:
+    that:
+      - kubeconfig_context in kubeconfig_data.contexts | default([]) | map(attribute='name')
+      - kubeconfig_data['current-context'] | default('') == kubeconfig_context
+    fail_msg: >-
+      {{ ansible_facts['user_dir'] }}/.kube/config on {{ inventory_hostname }} must have the context
+      {{ kubeconfig_context }} as its current context, because deploy.sh --local uses the current
+      context. Fix it with: kubectl config use-context {{ kubeconfig_context }}
+    quiet: true

@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "namespace",
+    "name",
+    "repoURL",
+    "revision",
+    "profilePath",
+    "exclude",
+    "syncPolicy"
+  ],
+  "properties": {
+    "namespace": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 63,
+      "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 63,
+      "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+    },
+    "repoURL": {
+      "type": "string",
+      "pattern": "^https://"
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profilePath": {
+      "type": "string",
+      "pattern": "^(helm/deployment/[a-z0-9-]+/[a-z0-9-]+/?)?$"
+    },
+    "exclude": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+$"
+      }
+    },
+    "syncPolicy": {
+      "type": "object",
+      "required": [
+        "selfHeal",
+        "prune"
+      ],
+      "properties": {
+        "selfHeal": {
+          "type": "boolean"
+        },
+        "prune": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

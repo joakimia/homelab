@@ -1,0 +1,13 @@
+- name: Install packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ tools_packages }}"
+    update_cache: true
+    cache_valid_time: 86400
+
+- name: Install pinned binaries
+  ansible.builtin.include_tasks: binary.yml
+  loop: "{{ tools_binaries }}"
+  loop_control:
+    loop_var: tools_binary
+    label: "{{ tools_binary.name }}"

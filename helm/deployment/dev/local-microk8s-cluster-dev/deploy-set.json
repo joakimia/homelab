@@ -3,20 +3,20 @@
     "helmArgs": ["--wait", "--timeout", "10m", "--rollback-on-failure"]
   },
   "releases": [
-    { "chart": "platform" },
-    { "chart": "cert-manager" },
-    { "chart": "cert-issuers" },
-    { "chart": "longhorn" },
-    { "chart": "traefik" },
-    { "chart": "postgres" },
-    { "chart": "pgbouncer" },
-    { "chart": "pgadmin" },
-    { "chart": "homelab" },
-    { "chart": "authelia" },
-    { "chart": "prometheus" },
-    { "chart": "grafana-loki" },
-    { "chart": "grafana-tempo" },
-    { "chart": "grafana-alloy" },
-    { "chart": "grafana" }
+    { "chart": "platform", "namespace": "default" },
+    { "chart": "cert-manager", "namespace": "hlab-platform" },
+    { "chart": "cert-issuers", "namespace": "hlab-platform" },
+    { "chart": "longhorn", "namespace": "hlab-storage" },
+    { "chart": "traefik", "namespace": "hlab-networking" },
+    { "chart": "postgres", "namespace": "hlab-database" },
+    { "chart": "pgbouncer", "namespace": "hlab-database" },
+    { "chart": "pgadmin", "namespace": "hlab-frontend-apps" },
+    { "chart": "homelab", "namespace": "default" },
+    { "chart": "authelia", "namespace": "hlab-platform" },
+    { "chart": "prometheus", "namespace": "hlab-observability" },
+    { "chart": "grafana-loki", "namespace": "hlab-observability" },
+    { "chart": "grafana-tempo", "namespace": "hlab-observability" },
+    { "chart": "grafana-alloy", "namespace": "hlab-observability" },
+    { "chart": "grafana", "namespace": "hlab-observability" }
   ]
 }

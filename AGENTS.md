@@ -12,7 +12,9 @@ The UTM VMs use bridged networking (Apple Virtualization's Shared mode isolates 
 
 The current stack is platform namespaces and policies, cert-manager with the `cert-issuers` chart, Traefik, PostgreSQL, PgBouncer, pgAdmin, Authelia, the `homelab` chart (Caddy homepage and a daily cleanup job), and the observability stack (Prometheus, Loki, Tempo, Alloy, Grafana; first deployed 2026-10-14, not yet verified end to end). Ingress serves HTTPS on host port 8443 and HTTP on 8080. Certificates come from the `homelab-ca` ClusterIssuer, backed by a name-constrained local CA in `.local/homelab-ca/` that the Mac trusts once. An Ingress hostname does not create DNS: clients need a DNS record or hosts entry.
 
-The RKE2 profile is published as `*.joakimia.dev` (dev; `joakimia.com` is reserved for a prod environment that is not started): OpenTofu in `infratructure/cloudflare/` creates the Cloudflare Tunnel, wildcard DNS, Access login (all hosts except the homepage), and a DNS-01 token; the `cloudflared` chart connects the tunnel to Traefik, and its Ingresses use the `letsencrypt` ClusterIssuer. Work in progress: not applied yet. Never run `tofu apply` unless the user asks.
+The RKE2 profile is published as `*.joakimia.dev` (dev; `joakimia.com` is reserved for a prod environment that is not started): OpenTofu in `infratructure/cloudflare/` creates the Cloudflare Tunnel, wildcard DNS, Access login (all hosts except the homepage), and a DNS-01 token; the `cloudflared` chart connects the tunnel to Traefik, and its Ingresses use the `letsencrypt` ClusterIssuer. Applied for dev on 2026-11-09. `infratructure/cloudflare/terraform/deploy.sh <env> plan|apply` runs it locally and in `.github/workflows/cd.yml` (state in R2, GitHub environment `dev`). Never run `tofu apply` unless the user asks.
+
+Argo CD (`argo-cd` and `argo-cd-apps` charts, namespace `hlab-gitops`) deploys the RKE2 profile's `deploy-set.json` from `main` and undoes manual changes. Change that cluster through Git; `deploy.sh --revision <pushed-branch>` points it at a branch, `--revision main` back. The first `deploy.sh` run on a cluster still creates the Secrets. Ansible (`infratructure/ansible/`) manages the Proxmox host's tools; cloud-init still owns the VMs.
 
 ## Working rules
 
@@ -47,6 +49,7 @@ The RKE2 profile is published as `*.joakimia.dev` (dev; `joakimia.com` is reserv
 ## Repository layout
 
 - `infratructure/on-premises/virtual-machine/debian13/` — shared `install.sh` and cloud-init seeds; the jumpbox remains work in progress.
+- `infratructure/ansible/` — Ansible for the Proxmox host (tools for `deploy.sh --local`); versions in `mise.toml` and the role's vars.
 - `infratructure/cloudflare/` — OpenTofu (versions in `mise.toml`): a `homelab-edge` module and one root per environment (`dev/`); state lives in `.local/cloudflare/`.
 - `helm/charts/` — every chart the homelab can use: upstream wrappers, own charts, the `homelab-*` base charts with the `homelab` chart that uses them, and scaffolds.
 - `helm/deployment/<env>/<cluster>/` — cluster profiles that choose and deploy charts.

@@ -72,6 +72,12 @@ namespaces:
     purpose: tools
     podSecurityEnforce: baseline
     enabled: true
+  # Argo CD. No NetworkPolicies: it talks to the API server, Git, and Helm repositories.
+  gitops:
+    name: hlab-gitops
+    purpose: gitops
+    podSecurityEnforce: baseline
+    enabled: false
 
 networkPolicies:
   enabled: true

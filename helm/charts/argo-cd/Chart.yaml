@@ -1,0 +1,16 @@
+apiVersion: v2
+name: argo-cd
+description: Argo CD (upstream Argo Helm chart as a pinned dependency), keeps the cluster in sync with the Git repository.
+
+type: application
+
+version: 0.1.0
+
+appVersion: v3.6.1
+
+# Pulled from the OCI registry by scripts/install.sh (helm dependency build, pinned by
+# Chart.lock). The Applications live in the argo-cd-apps chart: they need these CRDs first.
+dependencies:
+  - name: argo-cd
+    version: 10.17.1
+    repository: oci://ghcr.io/argoproj/argo-helm

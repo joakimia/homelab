@@ -34,6 +34,14 @@ The `homelab` SSH alias must connect to the Proxmox server over Tailscale. On th
 
 The Mac's SSH tunnel exposes the Kubernetes API only. Direct browser access to the ingress through Tailscale also needs a subnet route to `10.10.10.101/32` advertised by the Proxmox server and approved in the Tailscale admin console; that route is not currently enabled. The Traefik dashboard is disabled in this profile because it has no authentication configured.
 
+## GitOps with Argo CD
+
+The last two releases install [Argo CD](../../../charts/argo-cd/README.md) and its [ApplicationSet](../../../charts/argo-cd-apps/README.md). From then on, Argo CD deploys this profile's `deploy-set.json` from `main` within a few minutes of a merge, and undoes changes made by hand. Its UI is `https://argocd.joakimia.dev/` (Access login, then `admin`).
+
+- Run `deploy.sh` once on a new cluster: it creates the Secrets, which Argo CD does not.
+- To try a branch before merging, push it and run `./deploy.sh --revision <branch>` (current kubectl context, for example on the Proxmox host). Every push to the branch then syncs; `./deploy.sh --revision main` goes back.
+- A full `deploy.sh` run also points Argo CD back at `main`.
+
 ## Public access through Cloudflare
 
 [`infratructure/cloudflare`](../../../../infratructure/cloudflare/README.md) creates the tunnel, the `*.joakimia.dev` DNS record, the Access login, and the cert-manager token with OpenTofu. Apply it before the first deploy. Then the profile installs:

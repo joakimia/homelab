@@ -1,0 +1,75 @@
+{{- $_ := required "namespace is required" .Values.namespace -}}
+{{- $_ := required "name is required" .Values.name -}}
+{{- $_ := required "repoURL is required" .Values.repoURL -}}
+{{- $_ := required "revision is required" .Values.revision -}}
+{{- $_ := required "profilePath is required (the cluster profile folder, e.g. helm/deployment/dev/<cluster>)" .Values.profilePath -}}
+{{- $_ := required "syncPolicy settings are required" .Values.syncPolicy -}}
+{{- $profile := trimSuffix "/" .Values.profilePath -}}
+{{- /* helm/charts/<chart> to the profile folder, for the overlay's relative path. */ -}}
+{{- $toProfile := printf "../../../%s" $profile -}}
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  # Never delete Applications or their resources from here: a chart removed from
+  # deploy-set.json (or a generator error) must not uninstall it. Some charts (Longhorn) run
+  # destructive post-delete hooks. Remove an Application by hand when it is really gone.
+  syncPolicy:
+    applicationsSync: create-update
+    preserveResourcesOnDeletion: true
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    # One element per entry in deploy-set.json "releases" ({chart, namespace, ...}).
+    - matrix:
+        generators:
+          - git:
+              repoURL: {{ .Values.repoURL }}
+              revision: {{ .Values.revision }}
+              files:
+                - path: {{ printf "%s/deploy-set.json" $profile }}
+          - list:
+              elementsYaml: {{ "'{{ .releases | toJson }}'" }}
+      {{- with .Values.exclude }}
+      selector:
+        matchExpressions:
+          - key: chart
+            operator: NotIn
+            values:
+              {{- toYaml . | nindent 14 }}
+      {{- end }}
+  template:
+    metadata:
+      name: {{ "'{{ .chart }}'" }}
+      labels:
+        app.kubernetes.io/part-of: {{ .Values.name }}
+    spec:
+      project: default
+      source:
+        repoURL: {{ .Values.repoURL }}
+        targetRevision: {{ .Values.revision }}
+        path: {{ "'helm/charts/{{ .chart }}'" }}
+        helm:
+          releaseName: {{ "'{{ .chart }}'" }}
+          valueFiles:
+            - {{ printf "'%s/{{ .chart }}/values.yaml'" $toProfile }}
+          ignoreMissingValueFiles: true
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: {{ "'{{ .namespace }}'" }}
+      syncPolicy:
+        automated:
+          selfHeal: {{ .Values.syncPolicy.selfHeal }}
+          prune: {{ .Values.syncPolicy.prune }}
+        syncOptions:
+          # Upstream CRDs (cert-manager, Longhorn, Prometheus) are too large for client-side apply.
+          - ServerSideApply=true
+        # Charts depend on each other (CRDs, Secrets, Services); retry until they are there.
+        retry:
+          limit: 10
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m

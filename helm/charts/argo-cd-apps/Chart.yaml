@@ -1,0 +1,9 @@
+apiVersion: v2
+name: argo-cd-apps
+description: Argo CD ApplicationSet that turns a cluster profile's deploy-set.json into one Application per chart.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 1.0.0
