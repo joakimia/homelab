@@ -9,7 +9,9 @@
 #                          dash -n on every runcmd script block (cloud-init runs them with sh).
 #   ./check.sh charts      helm lint and helm template for each chart in each deploy-set.json,
 #                          with the profile's values overlay; JSON files must parse, and no
-#                          "---" separator may be glued to the end of a line.
+#                          "---" separator may be glued to the end of a line. Every chart has a
+#                          README.md; release namespaces match the install scripts; HTTPS chart
+#                          repositories are registered in argo-cd where a profile uses it.
 #                          Fetches chart dependencies (needs network).
 #   ./check.sh cases       helm template with each tests/helm/charts/<chart>/{pass,fail}-*.yaml overlay:
 #                          pass-* must render and contain each "# expect:" text, fail-* must
@@ -20,6 +22,8 @@
 #   ./check.sh terraform   tofu fmt -check on every *.tf file, and tofu init (no backend, locked
 #                          providers) and validate in each root (a folder with .terraform.lock.hcl).
 #                          Fetches providers (needs network).
+#   ./check.sh ansible     ansible-playbook --syntax-check and ansible-lint (production profile)
+#                          on infratructure/ansible.
 #   ./check.sh provisioning  Runs the provisioning install.sh for each tests/infratructure/.../debian13/{pass,fail}-*.txt
 #                          case with stub ssh and scp: the output, the remote calls, the copied
 #                          seed, and any seed ISO must match the case's "# expect" lines.
@@ -30,8 +34,9 @@
 #   ./check.sh nodes       Docker: the functions install.sh runs on the nodes, in debian:13 with
 #                          a microk8s stub and fake RKE2 token files.
 #
-# Needs bash, jq, helm, dash, and ruby or python3 with PyYAML. shellcheck and tofu (OpenTofu,
-# pinned in mise.toml) are optional locally (a notice is printed) and required when CI=true. The Docker groups take about a
+# Needs bash, jq, helm, dash, and ruby or python3 with PyYAML. shellcheck, tofu (OpenTofu), and
+# ansible-core with ansible-lint (pinned in mise.toml) are optional locally (a notice is printed)
+# and required when CI=true. The Docker groups take about a
 # minute, so the default run includes them only when CI=true; run them locally by name.
 set -euo pipefail
 export LC_ALL=C  # English messages from bash and tools, whatever the local language
@@ -42,7 +47,7 @@ provisioning_dir="$repo_root/infratructure/on-premises/virtual-machine/debian13"
 failures=0
 
 usage() {
-  echo "Usage: $0 [scripts|seeds|charts|cases|format|terraform|provisioning|usage|schema|nodes]" >&2
+  echo "Usage: $0 [scripts|seeds|charts|cases|format|terraform|ansible|provisioning|usage|schema|nodes]" >&2
   exit 2
 }
 
@@ -136,8 +141,32 @@ check_seeds() {
   done < <(repo_files 'cloud-init.yaml')
 }
 
+# Checks a deploy-set.json against the charts: each release's namespace must be the one its
+# install.sh uses (Argo CD deploys into it), and with Argo CD in the profile every HTTPS Helm
+# repository a chart depends on must be registered in the argo-cd chart.
+check_deploy_set() {
+  local deploy_set=$1 chart namespace script expected url argo_values
+  while IFS=$'\t' read -r chart namespace; do
+    script="$repo_root/helm/charts/$chart/scripts/install.sh"
+    [[ -f "$script" ]] || continue
+    expected="$(grep -E '^[[:space:]]*helm upgrade --install' "$script" | tail -n 1 | sed -nE 's/.*--namespace[[:space:]]+"?([^"[:space:]]+)"?.*/\1/p')"
+    [[ "$expected" != '$namespace' ]] || expected="$(sed -nE 's/^namespace=([^[:space:]]+).*/\1/p' "$script" | head -n 1)"
+    [[ "$namespace" == "$expected" ]] \
+      || fail "${deploy_set#"$repo_root"/}: $chart has namespace '$namespace', but its install.sh uses '$expected'"
+  done < <(jq -r '.releases[] | [.chart, (.namespace // "")] | @tsv' "$deploy_set")
+
+  jq -e '.releases[] | select(.chart == "argo-cd")' "$deploy_set" >/dev/null || return 0
+  argo_values="$(cat "$repo_root/helm/charts/argo-cd/values.yaml" "$(dirname "$deploy_set")/argo-cd/values.yaml" 2>/dev/null)"
+  while IFS= read -r chart; do
+    while IFS= read -r url; do
+      grep -qE "^[[:space:]]*url:[[:space:]]*$url/?$" <<<"$argo_values" \
+        || fail "${deploy_set#"$repo_root"/}: $chart depends on $url; add it to argo-cd.configs.repositories"
+    done < <(sed -nE 's#^[[:space:]]*repository:[[:space:]]*(https://[^[:space:]]+).*#\1#p' "$repo_root/helm/charts/$chart/Chart.yaml" 2>/dev/null)
+  done < <(jq -r '.releases[].chart' "$deploy_set")
+}
+
 check_charts() {
-  local file deploy_set profile_dir chart overlay args output glued rendered host
+  local file deploy_set profile_dir chart chart_dir overlay args output glued rendered host
   echo "==> charts"
   require helm
   require jq
@@ -145,8 +174,14 @@ check_charts() {
     jq empty "$file" 2>/dev/null || fail "${file#"$repo_root"/}: invalid JSON"
   done < <(repo_files '*.json')
 
+  # Every chart folder documents itself (empty folders are not in Git).
+  for chart_dir in "$repo_root"/helm/charts/*/; do
+    [[ -n "$(ls -A "$chart_dir")" && ! -f "$chart_dir/README.md" ]] && fail "${chart_dir#"$repo_root"/}: missing README.md"
+  done
+
   while IFS= read -r deploy_set; do
     profile_dir="$(dirname "$deploy_set")"
+    check_deploy_set "$deploy_set"
     rendered=''
     while IFS= read -r chart; do
       if [[ ! -x "$repo_root/helm/charts/$chart/scripts/install.sh" ]]; then
@@ -293,6 +328,29 @@ check_terraform() {
   done < <(repo_files .terraform.lock.hcl)
   rm -rf "$tmp"
   trap - EXIT
+}
+
+# Checks the Ansible playbook without a host: syntax check and ansible-lint (production profile).
+check_ansible() {
+  local dir="$repo_root/infratructure/ansible" log
+  echo "==> ansible"
+  if ! command -v ansible-playbook >/dev/null || ! command -v ansible-lint >/dev/null; then
+    [[ "${CI:-}" != true ]] || { echo "ansible-playbook and ansible-lint are required in CI" >&2; exit 1; }
+    echo "Notice: ansible-core or ansible-lint not installed; skipping it (mise install, see infratructure/ansible/README.md)."
+    return 0
+  fi
+  # ansible.cfg is read from the current folder, and Ansible refuses a non-UTF-8 locale
+  # (C.UTF-8 is still English).
+  if log="$(cd "$dir" && LC_ALL=C.UTF-8 ansible-playbook --syntax-check proxmox-host.yml 2>&1)"; then
+    echo "ok ansible-playbook --syntax-check"
+  else
+    fail "ansible-playbook --syntax-check: $(tail -n 3 <<<"$log")"
+  fi
+  if log="$(cd "$dir" && LC_ALL=C.UTF-8 ansible-lint --offline --profile production --nocolor 2>&1)"; then
+    echo "ok ansible-lint"
+  else
+    fail "ansible-lint: $(grep -v -i deprecat <<<"$log" | tail -n 10)"
+  fi
 }
 
 # Fails unless Docker can run containers.
@@ -610,6 +668,7 @@ check_usage() {
   echo "==> usage"
   for file in \
     "$repo_root/infratructure/on-premises/virtual-machine/debian13/install.sh" \
+    "$repo_root/infratructure/cloudflare/terraform/deploy.sh" \
     "$repo_root"/helm/deployment/*/*/install.sh \
     "$repo_root"/helm/deployment/*/*/deploy.sh \
     "$repo_root"/helm/charts/homelab-*/scripts/install.sh; do
@@ -623,7 +682,7 @@ check_usage() {
 
 case "${1:-all}" in
   all)
-    check_scripts; check_seeds; check_charts; check_cases; check_format; check_terraform; check_provisioning; check_usage
+    check_scripts; check_seeds; check_charts; check_cases; check_format; check_terraform; check_ansible; check_provisioning; check_usage
     if [[ "${CI:-}" == true ]]; then
       check_schema; check_nodes
     else
@@ -635,6 +694,7 @@ case "${1:-all}" in
   cases) check_cases ;;
   format) check_format ;;
   terraform) check_terraform ;;
+  ansible) check_ansible ;;
   provisioning) check_provisioning ;;
   usage) check_usage ;;
   schema) check_schema ;;

@@ -1,0 +1,24 @@
+namespace: hlab-gitops
+
+name: homelab
+
+# Git repository and revision (branch, tag, or commit) Argo CD deploys from. deploy.sh
+# --revision <ref> points a cluster at another branch; set it back to main afterwards.
+repoURL: https://github.com/joakimia/homelab.git
+revision: main
+
+# The cluster profile folder in the repository, for example
+# helm/deployment/dev/homelab-rke2-cluster-dev. Its deploy-set.json lists the charts, each
+# with its namespace, and <chart>/values.yaml is the overlay.
+profilePath: ""  # required
+
+# Charts in deploy-set.json that Argo CD does not manage: this chart itself (deploy.sh installs
+# it, so --revision is not undone by Argo CD).
+exclude: [argo-cd-apps]
+
+syncPolicy:
+  # Deploy every change on the revision, and undo changes made by hand in the cluster.
+  selfHeal: true
+  # Resources removed from Git stay in the cluster until this is on; turn it on once the
+  # Applications are known to be in sync.
+  prune: false

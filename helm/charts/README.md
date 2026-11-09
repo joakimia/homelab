@@ -27,6 +27,8 @@ The [RKE2 development profile](../deployment/dev/homelab-rke2-cluster-dev/README
 | [`longhorn`](longhorn/README.md) | `hlab-storage` | Upstream Longhorn, opt-in `longhorn` StorageClass with two replicas. |
 | [`authentik`](authentik/README.md) | `hlab-platform` | Upstream authentik identity provider on the in-cluster PostgreSQL, `https://authentik.joakimia.dev/`. |
 | [`cloudflared`](cloudflared/README.md) | `hlab-networking` | Cloudflare Tunnel connector: `*.joakimia.dev` from Cloudflare to Traefik. |
+| [`argo-cd`](argo-cd/README.md) | `hlab-gitops` | Upstream Argo CD 3.6, `https://argocd.joakimia.dev/` behind Access. |
+| [`argo-cd-apps`](argo-cd-apps/README.md) | `hlab-gitops` | ApplicationSet: one Application per release in the profile's `deploy-set.json`, synced from `main`. |
 
 In this profile, `cert-issuers` also adds the `letsencrypt` and `letsencrypt-staging` ClusterIssuers (DNS-01 through Cloudflare), and every Ingress uses `letsencrypt` with a `*.joakimia.dev` host.
 

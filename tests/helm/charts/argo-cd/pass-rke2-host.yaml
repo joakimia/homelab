@@ -1,0 +1,10 @@
+# The UI gets the profile's host and issuer; the server runs plain HTTP behind Traefik.
+# expect: - host: "argocd.joakimia.dev"
+# expect: cert-manager.io/cluster-issuer: "letsencrypt"
+# expect: server.insecure: "true"
+# expect: name: argocd-repo-longhorn
+# expect: resource.customizations.health.networking.k8s.io_Ingress
+host: argocd.joakimia.dev
+ingress:
+  tls:
+    clusterIssuer: letsencrypt

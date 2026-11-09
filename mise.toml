@@ -1,3 +1,5 @@
 # Tool versions for this repository (https://mise.jdx.dev). CI pins the same versions.
 [tools]
 opentofu = "1.13.9"
+"pipx:ansible-core" = "2.22.0"
+"pipx:ansible-lint" = { version = "26.11.0", uvx_args = "--with ansible-core==2.22.0" }

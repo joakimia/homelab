@@ -1,0 +1,2 @@
+# Context that deploy.sh --local uses (the current context of the login user's kubeconfig).
+kubeconfig_context: homelab-server

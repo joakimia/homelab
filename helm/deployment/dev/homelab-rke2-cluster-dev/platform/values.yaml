@@ -10,6 +10,9 @@ namespaces:
   # Shared files on Longhorn (the homelab chart's homelab-shared-pvc).
   filestore:
     enabled: true
+  # Argo CD keeps the cluster in sync with Git (argo-cd and argo-cd-apps charts).
+  gitops:
+    enabled: true
 
 storageClass:
   enabled: true

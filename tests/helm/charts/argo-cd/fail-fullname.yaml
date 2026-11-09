@@ -1,0 +1,3 @@
+# expect: /argo-cd/fullnameOverride
+argo-cd:
+  fullnameOverride: something-else

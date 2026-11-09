@@ -1,0 +1,6 @@
+# ansible_host is the SSH alias from ~/.ssh/config (Tailscale address and user), so the
+# address is kept in one place and plain ssh, deploy.sh, and Ansible connect the same way.
+proxmox_hosts:
+  hosts:
+    homelab-server-0:
+      ansible_host: homelab

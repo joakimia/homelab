@@ -1,0 +1,7 @@
+# Prepares the Proxmox host to deploy the RKE2 profile (deploy.sh --local).
+# Run as the login user; only tasks that need root use sudo (become).
+- name: Prepare the Proxmox host
+  hosts: proxmox_hosts
+  roles:
+    - tools
+    - kubeconfig

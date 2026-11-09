@@ -1,0 +1,8 @@
+# deploy.sh --revision <ref> sets revision; Git generator and sources both follow it.
+# expect: revision: feat/try-something
+# expect: targetRevision: feat/try-something
+# expect: prune: true
+profilePath: helm/deployment/dev/homelab-rke2-cluster-dev
+revision: feat/try-something
+syncPolicy:
+  prune: true

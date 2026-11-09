@@ -1,0 +1,42 @@
+# Pinned versions with SHA-256 per architecture. Helm and kubectl match the cloud-init seeds;
+# update them together and the version table in infratructure/ansible/README.md.
+tools_helm_version: v4.3.0
+tools_helm_sha256:
+  amd64: 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
+  arm64: 31c5794dd55c66a51e6b7d2e2ac7a114ae8b1de41ff1d9ba51748ac973b06a08
+
+tools_kubectl_version: v1.36.5
+tools_kubectl_sha256:
+  amd64: 33bc88a24c3b09cf55bfd59e6ca977881b61fc3f25ab65bc80c65b430248648e
+  arm64: 88fc1aca8fd0c1b44fe379f67c39bd6858bdfc50241dc55775f84d0f5b31da3a
+
+tools_opentofu_version: 1.13.9
+tools_opentofu_sha256:
+  amd64: b34b327cc1ef07178207b6f2cd1f5276537d3e5b7be316500f6dac50d4c0a857
+  arm64: 5dc196dde75b667e4806d358310ec96742774cd0993c54c1237efee5644b69b8
+
+tools_packages: [ca-certificates, curl, git, jq, rsync]
+
+# Debian architecture name for the download URLs.
+tools_arch: "{{ {'x86_64': 'amd64', 'aarch64': 'arm64'}[ansible_facts['architecture']] }}"
+
+# Binaries installed to /usr/local/bin. version_text is what the version command prints for
+# the pinned release; member is the file inside an archive (none for a plain binary).
+tools_binaries:
+  - name: helm
+    version_cmd: [helm, version, --short]
+    version_text: "{{ tools_helm_version }}+"
+    url: https://get.helm.sh/helm-{{ tools_helm_version }}-linux-{{ tools_arch }}.tar.gz
+    sha256: "{{ tools_helm_sha256[tools_arch] }}"
+    member: linux-{{ tools_arch }}/helm
+  - name: kubectl
+    version_cmd: [kubectl, version, --client]
+    version_text: "Client Version: {{ tools_kubectl_version }}"
+    url: https://dl.k8s.io/release/{{ tools_kubectl_version }}/bin/linux/{{ tools_arch }}/kubectl
+    sha256: "{{ tools_kubectl_sha256[tools_arch] }}"
+  - name: tofu
+    version_cmd: [tofu, version]
+    version_text: "OpenTofu v{{ tools_opentofu_version }}"
+    url: https://github.com/opentofu/opentofu/releases/download/v{{ tools_opentofu_version }}/tofu_{{ tools_opentofu_version }}_linux_{{ tools_arch }}.tar.gz
+    sha256: "{{ tools_opentofu_sha256[tools_arch] }}"
+    member: tofu

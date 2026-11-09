@@ -20,7 +20,9 @@ variable "public_apex" {
   type = bool
 }
 
-# Comma-separated, as in CLOUDFLARE_ACCESS_EMAILS: export TF_VAR_access_emails="$CLOUDFLARE_ACCESS_EMAILS".
+# Comma-separated, as in CLOUDFLARE_ACCESS_EMAILS (../deploy.sh sets TF_VAR_access_emails).
+# Sensitive so plans, also in public CI logs, do not show the addresses.
 variable "access_emails" {
-  type = string
+  type      = string
+  sensitive = true
 }

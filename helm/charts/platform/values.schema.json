@@ -22,7 +22,8 @@
         "platform",
         "tools",
         "observability",
-        "observabilityAgents"
+        "observabilityAgents",
+        "gitops"
       ],
       "additionalProperties": false,
       "properties": {
@@ -63,6 +64,9 @@
           "$ref": "#/definitions/namespace"
         },
         "observabilityAgents": {
+          "$ref": "#/definitions/namespace"
+        },
+        "gitops": {
           "$ref": "#/definitions/namespace"
         }
       }

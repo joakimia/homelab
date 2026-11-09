@@ -10,6 +10,11 @@
 #                                            kubectl); adds direct and Mac-over-SSH contexts.
 #   ./deploy.sh --local                      Use the current kubectl context; install.sh runs
 #                                            this on the VM.
+#   ./deploy.sh --revision <git-ref>         Point Argo CD at a pushed branch, tag, or commit
+#                                            (current kubectl context); --revision main goes back.
+#
+# After the first deploy, Argo CD (argo-cd and argo-cd-apps charts) keeps the cluster in sync
+# with main; a full run here also sets it back to main.
 set -euo pipefail
 export LC_ALL=C  # English messages from bash and tools, whatever the local language
 
@@ -21,7 +26,7 @@ charts_dir="$(cd "$profile_dir/../../../charts" && pwd)"
 config_file="$PWD/.local/$cluster_name.kubeconfig"
 
 usage() {
-  echo "Usage: $0 debian@<vm-ip> | --kubeconfig debian@<vm-ip> | --local" >&2
+  echo "Usage: $0 debian@<vm-ip> | --kubeconfig debian@<vm-ip> | --local | --revision <git-ref>" >&2
   exit 2
 }
 
@@ -146,7 +151,28 @@ deploy_releases() {
   echo "Past Cloudflare, on the LAN: curl --resolve homepage.joakimia.dev:8443:<VM-IP> https://homepage.joakimia.dev:8443/"
 }
 
+# Re-installs the argo-cd-apps release with another revision, so every Application follows it.
+# The ref must be pushed: Argo CD reads the repository on GitHub, not this checkout.
+set_revision() {
+  local ref=$1 args=()
+  [[ "$ref" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo "Invalid git ref '$ref'" >&2; usage; }
+  for command in helm kubectl; do
+    command -v "$command" >/dev/null || { echo "Required command not found: $command" >&2; exit 1; }
+  done
+  if [[ -f "$profile_dir/argo-cd-apps/values.yaml" ]]; then
+    args=(--values "$profile_dir/argo-cd-apps/values.yaml")
+  fi
+  echo "Pointing Argo CD in context $(kubectl config current-context) at revision $ref..."
+  "$charts_dir/argo-cd-apps/scripts/install.sh" ${args[@]+"${args[@]}"} --set "revision=$ref" --wait
+  echo "Applications (they sync within a few minutes):"
+  kubectl -n hlab-gitops get applications
+}
+
 case "${1:-}" in
+  --revision)
+    [[ $# -eq 2 ]] || usage
+    set_revision "$2"
+    ;;
   --local)
     [[ $# -eq 1 ]] || usage
     deploy_releases

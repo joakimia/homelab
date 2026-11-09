@@ -1,0 +1,10 @@
+# One Application per deploy-set.json release, with the profile overlay, except this chart.
+# expect: - path: helm/deployment/dev/homelab-rke2-cluster-dev/deploy-set.json
+# expect: elementsYaml: '{{ .releases | toJson }}'
+# expect: - '../../../helm/deployment/dev/homelab-rke2-cluster-dev/{{ .chart }}/values.yaml'
+# expect: namespace: '{{ .namespace }}'
+# expect: - argo-cd-apps
+# expect: targetRevision: main
+# expect: applicationsSync: create-update
+# expect: preserveResourcesOnDeletion: true
+profilePath: helm/deployment/dev/homelab-rke2-cluster-dev/
