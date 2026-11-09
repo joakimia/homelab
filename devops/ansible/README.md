@@ -10,7 +10,7 @@ It manages:
 - Helm, kubectl, and OpenTofu in `/usr/local/bin`, each checked against SHA-256 per architecture (amd64, arm64). A binary is only replaced when its version differs from the pin, also when it is newer.
 - A check (no changes) that the login user's `~/.kube/config` exists and has `homelab-server` as its current context, because `deploy.sh --local` uses the current context.
 
-It does not manage the RKE2 VMs (cloud-init seeds in [`on-premises/virtual-machine/debian13`](../on-premises/virtual-machine/debian13/README.md) do), Proxmox itself, or the kubeconfig's contents.
+It does not manage the RKE2 VMs (cloud-init seeds in [`on-premises/virtual-machine/debian13`](../../infratructure/on-premises/virtual-machine/debian13/README.md) do), Proxmox itself, or the kubeconfig's contents.
 
 ## Layout
 
@@ -35,19 +35,14 @@ The inventory connects through the `homelab` SSH alias, so the Tailscale address
 
 ## Install Ansible on the Mac
 
-Add these lines under `[tools]` in the repository's `mise.toml`, then run `mise install`. mise installs them with uv (pipx if uv is missing). ansible-core 2.22 needs Python 3.13 or newer, which uv downloads if needed. The second line pins ansible-lint's own copy of ansible-core to the same version:
-
-```toml
-"pipx:ansible-core" = "2.22.0"
-"pipx:ansible-lint" = { version = "26.11.0", uvx_args = "--with ansible-core==2.22.0" }
-```
+Both are pinned in the repository's `mise.toml`; run `mise install`. mise installs them with uv (pipx if uv is missing). ansible-core 2.22 needs Python 3.13 or newer, which uv downloads if needed, and ansible-lint uses its own copy of the same ansible-core version.
 
 ## Run
 
 From this folder, preview first and then apply. `-K` (`--ask-become-pass`) prompts for the sudo password; it is never stored:
 
 ```sh
-cd infratructure/ansible
+cd devops/ansible
 ansible-playbook proxmox-host.yml --check --diff --ask-become-pass
 ansible-playbook proxmox-host.yml --diff --ask-become-pass
 ```
@@ -58,9 +53,4 @@ A second run should report `changed=0`. Things to watch out for:
 - `--check` cannot download, so it only reports which binaries it would install.
 - The package task runs `apt-get update` at most once a day. If the Proxmox enterprise repository is enabled without a subscription, that update fails; use the no-subscription repository instead.
 
-Lint the playbook without a host:
-
-```sh
-ansible-playbook --syntax-check proxmox-host.yml
-ansible-lint --profile production
-```
+Test it without the real host: `tests/check.sh ansible` lints it, and `tests/check.sh devops` runs it twice against a clean `debian:13` container over SSH (fixtures in [`tests/devops/ansible`](../../tests/devops/ansible/)); the second run must report `changed=0`. CI runs both.

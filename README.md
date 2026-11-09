@@ -1,24 +1,46 @@
 # Homelab
 
-A personal homelab repository focused on learning and building the infrastructure, DevOps, and CI/CD foundations behind a homelab. It covers the underlying platform features and Kubernetes workload deployment patterns. Homelab applications are hosted privately in the lab and generally live in their own repositories, with their own pipelines and Helm charts; this repository documents the shared infrastructure and repeatable deployment structure they build on.
+A personal hobby and learning project: a small Kubernetes lab at home, built from code to learn Linux, cloud-init, Kubernetes, Helm, GitOps, and infrastructure automation. It is not production-ready. Applications generally live in their own repositories; this one holds the shared infrastructure and the deployment structure they build on.
 
-The homelab has two Debian 13 environments: a MicroK8s learning cluster in UTM, and a two-node RKE2 development cluster on Proxmox (`homelab-k8s-node-cp0` and `homelab-k8s-node-wk0`). UTM addressing is separate from the home LAN setup used by Proxmox.
+## What runs today
 
-## Current focus
+The development cluster runs **RKE2 on two Debian 13 VMs on a Proxmox host** (`homelab-k8s-node-cp0` and `homelab-k8s-node-wk0`), published as **`*.joakimia.dev`** through a Cloudflare Tunnel:
 
-The active development cluster runs RKE2 on Proxmox. Its nodes use `10.10.10.101` and `10.10.10.102`; the deployment and access steps are in the [RKE2 profile guide](helm/deployment/dev/homelab-rke2-cluster-dev/README.md). The UTM MicroK8s profile remains available for local learning:
+```text
+Browser ─▶ Cloudflare (TLS, Access login) ─▶ Tunnel ─▶ cloudflared ─▶ Traefik ─▶ apps
+                                              (outbound from the cluster; no open ports at home)
 
-```sh
-infratructure/on-premises/virtual-machine/debian13/install.sh microk8s control-plane-node debian@<vm-ip>
-helm/deployment/dev/local-microk8s-cluster-dev/install.sh debian@<vm-ip>
+merge to main ─▶ GitHub ◀── Argo CD (in the cluster) syncs the RKE2 profile
 ```
 
-The RKE2 seed and profile have been deployed and verified on the Proxmox VMs. The jumpbox seed and some charts remain work in progress or scaffolds.
+| Layer | What | Where |
+|---|---|---|
+| Edge | Cloudflare Tunnel, wildcard DNS, Access login (all hosts except the homepage and Authentik), DNS-01 token | [`infratructure/cloudflare`](infratructure/cloudflare/README.md) (OpenTofu) |
+| Nodes | Debian 13 VMs from cloud-init seeds; RKE2 (Proxmox) or MicroK8s (UTM) | [`infratructure/on-premises`](infratructure/on-premises/virtual-machine/debian13/README.md) |
+| Platform | Namespaces and NetworkPolicies, cert-manager with Let's Encrypt, Traefik, Longhorn, local-path storage | [`helm/charts`](helm/charts/README.md) |
+| Apps | PostgreSQL, PgBouncer, pgAdmin, Authentik, the homepage, Prometheus, Loki, Tempo, Alloy, Grafana | [`helm/charts`](helm/charts/README.md) |
+| Delivery | Argo CD deploys the profile from `main`; Ansible prepares the Proxmox host; CI runs `tests/check.sh` | [`devops`](devops/README.md) |
+
+Start with the [RKE2 profile guide](helm/deployment/dev/homelab-rke2-cluster-dev/README.md) and the [architecture overview](docs/architecture-overview/homelab-rke2-cluster-dev/README.md). The UTM MicroK8s profile ([guide](helm/deployment/dev/local-microk8s-cluster-dev/README.md)) stays available for local learning. A prod environment on `joakimia.com` is planned, not started.
 
 ## Where things live
 
-- `infratructure/on-premises/virtual-machine/debian13/`: the shared `install.sh` and cloud-init seeds for MicroK8s, RKE2, and the jumpbox. [README](infratructure/on-premises/virtual-machine/debian13/README.md)
-- `helm/charts/`: individual Helm charts. [README](helm/charts/README.md)
-- `helm/deployment/`: cluster profiles that choose and deploy charts. [README](helm/README.md)
-- `docs/`: architecture notes, user guides, and runbooks.
-- `tests/`: `check.sh` with the static checks that CI also runs. [README](tests/README.md)
+The repository is split by question:
+
+- **`infratructure/`: what exists.** Cloud-init seeds and the provisioning `install.sh` for the VMs, OpenTofu for Cloudflare, and Azure Bicep (experiments).
+- **`helm/`: what runs in a cluster.** `charts/` holds every chart; `deployment/<env>/<cluster>/` is a cluster profile that picks charts and overlays. [README](helm/README.md)
+- **`devops/`: how it gets deployed and operated.** The Argo CD (GitOps) flow and Ansible for the Proxmox host. [README](devops/README.md)
+- **`docs/`:** architecture notes, user guides, and runbooks. [README](docs/README.md)
+- **`tests/`:** `check.sh`, the static and Docker checks CI runs, with test cases that mirror the code. [README](tests/README.md)
+
+## Status
+
+| Part | State |
+|---|---|
+| RKE2 cluster on Proxmox, all charts in the profile | Deployed, managed by Argo CD from `main` |
+| Cloudflare (dev) | Applied; state in R2 and the CD workflow are set up but not yet migrated |
+| Ansible for the Proxmox host | Tested in containers, not yet run against the host |
+| UTM MicroK8s profile | Works; addresses change with the Mac's LAN |
+| Jumpbox seed, several charts (`kafka`, `rabbitmq`, `stalwart-mail`, …) | Scaffolds or work in progress |
+
+Versions are pinned throughout (charts in `Chart.lock`, tools in `mise.toml` and the seeds). Run `tests/check.sh` before pushing.

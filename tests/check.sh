@@ -20,11 +20,13 @@
 #   ./check.sh format      .editorconfig basics on files in Git: final newline, no tabs, and no
 #                          trailing whitespace (Markdown excepted); relative Markdown links resolve;
 #                          every action in .github/workflows exists at its ref (needs network).
-#   ./check.sh terraform   tofu fmt -check on every *.tf file, and tofu init (no backend, locked
-#                          providers) and validate in each root (a folder with .terraform.lock.hcl).
+#   ./check.sh terraform   tofu fmt -check on every *.tf file, tofu init (no backend, locked
+#                          providers) and validate in each root (a folder with .terraform.lock.hcl),
+#                          and tofu test with a mocked provider for tests/<dir>/*.tftest.hcl
+#                          (<dir>/terraform/<env> is the root).
 #                          Fetches providers (needs network).
 #   ./check.sh ansible     ansible-playbook --syntax-check and ansible-lint (production profile)
-#                          on infratructure/ansible.
+#                          on devops/ansible.
 #   ./check.sh provisioning  Runs the provisioning install.sh for each tests/infratructure/.../debian13/{pass,fail}-*.txt
 #                          case with stub ssh and scp: the output, the remote calls, the copied
 #                          seed, and any seed ISO must match the case's "# expect" lines.
@@ -32,6 +34,9 @@
 #                          usage without arguments.
 #   ./check.sh schema      Docker: cloud-init schema (Debian 13's cloud-init) on the user-data
 #                          install.sh renders from each seed.
+#   ./check.sh devops      Docker: the Ansible playbook against a clean debian:13 host
+#                          (tests/devops/ansible) twice; the second run must change nothing,
+#                          and the pinned tools must run.
 #   ./check.sh nodes       Docker: the functions install.sh runs on the nodes, in debian:13 with
 #                          a microk8s stub and fake RKE2 token files.
 #
@@ -48,7 +53,7 @@ provisioning_dir="$repo_root/infratructure/on-premises/virtual-machine/debian13"
 failures=0
 
 usage() {
-  echo "Usage: $0 [scripts|seeds|charts|cases|format|terraform|ansible|provisioning|usage|schema|nodes]" >&2
+  echo "Usage: $0 [scripts|seeds|charts|cases|format|terraform|ansible|provisioning|usage|schema|devops|nodes]" >&2
   exit 2
 }
 
@@ -312,14 +317,14 @@ check_format() {
 # Checks the OpenTofu code without credentials or state: formatting, then init and validate in
 # each root module with a throwaway data folder, so nothing is written next to the code.
 check_terraform() {
-  local lock root tmp
+  local lock root tmp tests_dir rel tested=' '
   echo "==> terraform"
   if ! command -v tofu >/dev/null || ! tofu version >/dev/null 2>&1; then
     [[ "${CI:-}" != true ]] || { echo "tofu is required in CI" >&2; exit 1; }
     echo "Notice: tofu not available; skipping it (mise install, see mise.toml, to match CI)."
     return 0
   fi
-  tofu fmt -check -recursive "$repo_root/infratructure" >/dev/null || fail "tofu fmt: run tofu fmt -recursive infratructure"
+  tofu fmt -check -recursive "$repo_root/infratructure" "$repo_root/tests" >/dev/null || fail "tofu fmt: run tofu fmt -recursive infratructure tests"
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/homelab-tofu.XXXXXX")"
   # shellcheck disable=SC2064 # expand now: tmp is local and gone when the trap fires
   trap "rm -rf '$tmp'" EXIT
@@ -335,6 +340,20 @@ check_terraform() {
     else
       fail "tofu validate ${root#"$repo_root"/}"
     fi
+    # Module tests (mocked provider, offline) for <dir>/terraform/<env> live in tests/<dir>/;
+    # run them once, from the first root that pins the provider.
+    tests_dir="$repo_root/tests/$(dirname "$(dirname "${root#"$repo_root"/}")")"
+    if compgen -G "$tests_dir/*.tftest.hcl" >/dev/null && [[ "$tested" != *" $tests_dir "* ]]; then
+      tested="$tested$tests_dir "
+      # From the root back to the repository root, then into tests/.
+      rel="$(sed -E 's#[^/]+#..#g' <<<"${root#"$repo_root"/}")/${tests_dir#"$repo_root"/}"
+      if TF_DATA_DIR="$tmp/data" tofu -chdir="$root" init -backend=false -lockfile=readonly -input=false -no-color -test-directory="$rel" >"$tmp/init.log" 2>&1 \
+        && TF_DATA_DIR="$tmp/data" tofu -chdir="$root" test -no-color -test-directory="$rel" >"$tmp/test.log" 2>&1; then
+        echo "ok ${tests_dir#"$repo_root"/} ($(grep -cE '^ *run ".*"\.\.\. pass' "$tmp/test.log") tofu tests)"
+      else
+        fail "tofu test ${tests_dir#"$repo_root"/}: $(grep -E 'fail|Error' "$tmp/test.log" "$tmp/init.log" | head -n 5)"
+      fi
+    fi
   done < <(repo_files .terraform.lock.hcl)
   rm -rf "$tmp"
   trap - EXIT
@@ -342,11 +361,11 @@ check_terraform() {
 
 # Checks the Ansible playbook without a host: syntax check and ansible-lint (production profile).
 check_ansible() {
-  local dir="$repo_root/infratructure/ansible" log
+  local dir="$repo_root/devops/ansible" log
   echo "==> ansible"
   if ! command -v ansible-playbook >/dev/null || ! command -v ansible-lint >/dev/null; then
     [[ "${CI:-}" != true ]] || { echo "ansible-playbook and ansible-lint are required in CI" >&2; exit 1; }
-    echo "Notice: ansible-core or ansible-lint not installed; skipping it (mise install, see infratructure/ansible/README.md)."
+    echo "Notice: ansible-core or ansible-lint not installed; skipping it (mise install, see devops/ansible/README.md)."
     return 0
   fi
   # ansible.cfg is read from the current folder, and Ansible refuses a non-UTF-8 locale
@@ -658,6 +677,58 @@ STUB
 }
 
 # Runs node_function_tests in debian:13 against this checkout's install.sh.
+# Runs the Proxmox host playbook against a throwaway debian:13 container over SSH, twice.
+# devops_container is global for the EXIT trap.
+check_devops() {
+  local fixture="$repo_root/tests/devops/ansible" tmp port log recap tool
+  echo "==> devops"
+  require_docker
+  require ansible-playbook
+  require ssh-keygen
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/homelab-devops.XXXXXX")"
+  ssh-keygen -q -t ed25519 -N '' -f "$tmp/id_ed25519"
+  cp "$fixture/kubeconfig.yaml" "$tmp/"
+  devops_container="$(docker run -d --rm -p 127.0.0.1::22 -v "$tmp:/fixture:ro" \
+    -v "$fixture/host-setup.sh:/host-setup.sh:ro" debian:13 sh /host-setup.sh)"
+  # shellcheck disable=SC2064 # expand now: tmp is local and gone when the trap fires
+  trap "docker rm -f \"\$devops_container\" >/dev/null 2>&1; rm -rf '$tmp'" EXIT
+  port="$(docker port "$devops_container" 22/tcp | sed -nE 's/.*:([0-9]+)$/\1/p' | head -n 1)"
+  cat > "$tmp/inventory.yml" <<INVENTORY
+proxmox_hosts:
+  hosts:
+    homelab-server-0:
+      ansible_host: 127.0.0.1
+      ansible_port: $port
+      ansible_user: joakimia
+      ansible_ssh_private_key_file: $tmp/id_ed25519
+      ansible_ssh_common_args: -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
+      ansible_become_password: testpass
+INVENTORY
+  # The container installs sshd first; wait until a login works (up to 3 minutes).
+  for _ in $(seq 1 90); do
+    ssh -q -o BatchMode=yes -o ConnectTimeout=2 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+      -i "$tmp/id_ed25519" -p "$port" joakimia@127.0.0.1 true 2>/dev/null && break
+    sleep 2
+  done
+  for run in first second; do
+    if ! log="$(cd "$repo_root/devops/ansible" && LC_ALL=C.UTF-8 ANSIBLE_HOST_KEY_CHECKING=false \
+      ansible-playbook -i "$tmp/inventory.yml" proxmox-host.yml 2>&1)"; then
+      fail "devops: $run playbook run failed: $(tail -n 15 <<<"$log")"
+      return 0
+    fi
+    recap="$(grep -E '^homelab-server-0 +:' <<<"$log")"
+    echo "ok $run run: ${recap#*: }"
+  done
+  grep -qE 'changed=0 ' <<<"$recap" || fail "devops: the second run changed something (not idempotent): $recap"
+  for tool in "helm version --short" "kubectl version --client" "tofu version"; do
+    docker exec "$devops_container" sh -c "$tool" >/dev/null 2>&1 || fail "devops: '$tool' does not run on the host"
+  done
+  echo "ok pinned tools run"
+  docker rm -f "$devops_container" >/dev/null
+  rm -rf "$tmp"
+  trap - EXIT
+}
+
 check_nodes() {
   local results line
   echo "==> nodes"
@@ -694,9 +765,9 @@ case "${1:-all}" in
   all)
     check_scripts; check_seeds; check_charts; check_cases; check_format; check_terraform; check_ansible; check_provisioning; check_usage
     if [[ "${CI:-}" == true ]]; then
-      check_schema; check_nodes
+      check_schema; check_devops; check_nodes
     else
-      echo "Notice: skipping the Docker groups schema and nodes (about a minute); CI runs them. Run them with tests/check.sh schema or nodes."
+      echo "Notice: skipping the Docker groups schema, devops, and nodes (a few minutes); CI runs them. Run them with tests/check.sh schema, devops, or nodes."
     fi ;;
   scripts) check_scripts ;;
   seeds) check_seeds ;;
@@ -708,6 +779,7 @@ case "${1:-all}" in
   provisioning) check_provisioning ;;
   usage) check_usage ;;
   schema) check_schema ;;
+  devops) check_devops ;;
   nodes) check_nodes ;;
   *) usage ;;
 esac

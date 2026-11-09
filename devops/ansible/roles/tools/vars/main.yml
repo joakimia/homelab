@@ -1,5 +1,5 @@
 # Pinned versions with SHA-256 per architecture. Helm and kubectl match the cloud-init seeds;
-# update them together and the version table in infratructure/ansible/README.md.
+# update them together and the version table in devops/ansible/README.md.
 tools_helm_version: v4.3.0
 tools_helm_sha256:
   amd64: 86584a54def73570558f66f5111cc53dfed56689637ae32c1201205d494f54fb
