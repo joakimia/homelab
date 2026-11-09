@@ -1,0 +1,4 @@
+# expect: /ports/metrics/containerPort
+ports:
+  metrics:
+    containerPort: 80

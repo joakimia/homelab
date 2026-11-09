@@ -9,12 +9,27 @@ homelab-shared-pvc:
   storageClassName: longhorn
   accessModes: [ReadWriteMany]
 
-# Links to the UIs this profile installs: Longhorn, but no Authelia or Traefik dashboard yet.
+# The start page is public (no Cloudflare Access login); the other hosts need the Access login.
+# Links to the UIs this profile installs, including Authentik, Longhorn, and the Traefik dashboard.
 homelab-frontend:
+  host: homepage.joakimia.dev
+  # https://joakimia.dev/ shows the homepage too (the tunnel routes the bare domain to Traefik).
+  extraHosts: [joakimia.dev]
+  ingress:
+    tls:
+      clusterIssuer: letsencrypt
   links:
     auth:
-      enabled: false
+      title: Authentik
+      url: https://authentik.joakimia.dev
+    grafana:
+      url: https://grafana.joakimia.dev
     longhorn:
+      url: https://longhorn.joakimia.dev
       enabled: true
+    pgadmin:
+      url: https://pgadmin.joakimia.dev
+    prometheus:
+      url: https://prometheus.joakimia.dev
     traefik:
-      enabled: false
+      url: https://traefik.joakimia.dev

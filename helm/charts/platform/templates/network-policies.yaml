@@ -10,6 +10,8 @@
 {{- $pgbouncerSelector := .Values.networkPolicies.pgbouncer.podSelector }}
 {{- $postgresSelector := .Values.networkPolicies.postgres.podSelector }}
 {{- $postgresSetupSelector := .Values.networkPolicies.postgresSetup.podSelector }}
+{{- $platform := .Values.namespaces.platform }}
+{{- $authentikSelector := .Values.networkPolicies.authentik.podSelector }}
 {{- $observability := .Values.namespaces.observability }}
 {{- $grafanaSelector := .Values.networkPolicies.grafana.podSelector }}
 {{- $prometheusSelector := .Values.networkPolicies.prometheus.podSelector }}
@@ -234,7 +236,8 @@ spec:
   policyTypes:
     - Ingress
   ingress:
-    # PgBouncer for apps, the setup Job, and pgAdmin directly (admin sessions do not work well through a pooler).
+    # PgBouncer for apps, the setup Job, and pgAdmin and authentik directly (admin sessions do
+    # not work well through a pooler, and authentik keeps its own connections).
     - from:
         - podSelector:
             matchLabels:
@@ -248,6 +251,14 @@ spec:
           podSelector:
             matchLabels:
               {{- toYaml $pgadminSelector | nindent 14 }}
+        {{- if $platform.enabled }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $platform.name }}
+          podSelector:
+            matchLabels:
+              {{- toYaml $authentikSelector | nindent 14 }}
+        {{- end }}
       ports:
         - protocol: TCP
           port: postgresql
@@ -292,6 +303,33 @@ spec:
       ports:
         - protocol: TCP
           port: postgresql
+---
+{{- end }}
+{{- if and $platform.enabled $networking.enabled }}
+{{- /* hlab-platform has no default deny (the API server must reach cert-manager's webhook); this
+policy closes only the authentik pods to everything but Traefik. Egress stays open. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-to-authentik
+  namespace: {{ $platform.name }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- toYaml $authentikSelector | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $networking.name }}
+          podSelector:
+            matchLabels:
+              {{- toYaml $traefikSelector | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: http
 ---
 {{- end }}
 {{- if $observability.enabled }}

@@ -1,0 +1,17 @@
+# The start page takes its name from siteName; with every link off it says so.
+# expect: <title>Example lab</title>
+# expect: <h1><span>Example lab</span></h1>
+# expect: No services are linked yet.
+homelab-frontend:
+  siteName: Example lab
+  links:
+    auth:
+      enabled: false
+    grafana:
+      enabled: false
+    pgadmin:
+      enabled: false
+    prometheus:
+      enabled: false
+    traefik:
+      enabled: false

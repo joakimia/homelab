@@ -3,6 +3,8 @@ namespace: hlab-frontend-apps
 name: ""  # required
 
 host: ""  # required
+# More hostnames for the same site, for example the bare domain. Same Ingress and certificate.
+extraHosts: []
 
 image:
   repository: caddy

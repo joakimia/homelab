@@ -1,0 +1,5 @@
+# expect: /acme/issuers/letsencrypt
+acme:
+  enabled: true
+  issuers:
+    letsencrypt: http://acme.example.com/directory

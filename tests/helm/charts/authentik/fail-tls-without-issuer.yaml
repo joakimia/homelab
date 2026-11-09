@@ -1,0 +1,4 @@
+# expect: /ingress/tls/clusterIssuer
+ingress:
+  tls:
+    clusterIssuer: ""

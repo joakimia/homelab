@@ -1,3 +1,17 @@
 # Optional environment specific override values for the homelab RKE2 cluster goes here
 # If no override values are needed, this file can be left empty.
 # It must be defined however, if you want to deploy the chart in this environment.
+
+# authentik's database and role. scripts/install.sh generates postgres-authentik; the authentik
+# chart's installer copies the password into hlab-platform.
+roles:
+  authentik:
+    name: authentik
+    options: [LOGIN]
+    passwordSecret:
+      name: postgres-authentik
+      key: PASSWORD
+
+databases:
+  authentik:
+    owner: authentik

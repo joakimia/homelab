@@ -1,7 +1,9 @@
 # A profile overrides links by key and adds more: only enabled links are on the page.
-# expect: <li><a href="https://longhorn.homelab.com:8443">Longhorn</a></li>
-# expect: <li><a href="https://grafana.homelab.com:8443">Grafana</a></li>
-# expect: <li><a href="https://example.homelab.com:8443/">Example</a></li>
+# expect: <a href="https://longhorn.homelab.com:8443" class="svc" data-id="longhorn">
+# expect: <span class="svc-title">Longhorn</span>
+# expect: <a href="https://grafana.homelab.com:8443" class="svc" data-id="grafana">
+# expect: <a href="https://example.homelab.com:8443/" class="svc" data-id="example">
+# expect: <span class="svc-host mono">example.homelab.com</span>
 homelab-frontend:
   links:
     longhorn:

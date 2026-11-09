@@ -1,0 +1,3 @@
+# Tool versions for this repository (https://mise.jdx.dev). CI pins the same versions.
+[tools]
+opentofu = "1.13.9"

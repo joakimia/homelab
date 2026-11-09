@@ -1,0 +1,9 @@
+apiVersion: v2
+name: cloudflared
+description: Cloudflare Tunnel connector that brings Cloudflare traffic for the homelab's hosts to Traefik.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 2026.10.7

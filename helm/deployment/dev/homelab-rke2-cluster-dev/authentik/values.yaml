@@ -1,3 +1,7 @@
-# Optional environment specific override values for the homelab RKE2 cluster goes here
-# If no override values are needed, this file can be left empty.
-# It must be defined however, if you want to deploy the chart in this environment.
+# Public through Cloudflare Tunnel on port 443 (to Traefik's 8443): https://authentik.joakimia.dev/.
+# authentik takes its URLs from the Host header, so no port appears in them.
+host: authentik.joakimia.dev
+
+ingress:
+  tls:
+    clusterIssuer: letsencrypt

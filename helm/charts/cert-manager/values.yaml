@@ -7,6 +7,12 @@ cert-manager:
   # No Prometheus in the cluster yet.
   prometheus:
     enabled: false
+  # DNS-01 (Let's Encrypt): check that the TXT record is visible on public resolvers, not
+  # through cluster DNS, which can cache "no such record" for the zone's negative TTL (30 min
+  # on Cloudflare) and stall issuing.
+  extraArgs:
+    - --dns01-recursive-nameservers-only
+    - --dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53
   resources:
     requests:
       cpu: 10m

@@ -4,6 +4,7 @@
   "required": [
     "namespace",
     "clusterIssuer",
+    "acme",
     "defaultSecrets",
     "name",
     "defaultEnv",
@@ -36,10 +37,37 @@
       },
       "additionalProperties": false
     },
+    "acme": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "issuers"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "issuers": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "type": "string",
+            "maxLength": 63,
+            "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+          },
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^https://"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "defaultSecrets": {
       "type": "object",
       "required": [
-        "ca"
+        "ca",
+        "cloudflare"
       ],
       "properties": {
         "ca": {
@@ -68,6 +96,36 @@
                   "pattern": "^[-._a-zA-Z0-9]+$"
                 },
                 "privateKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^[-._a-zA-Z0-9]+$"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "cloudflare": {
+          "type": "object",
+          "required": [
+            "name",
+            "keys"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253,
+              "pattern": "^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$"
+            },
+            "keys": {
+              "type": "object",
+              "required": [
+                "apiToken"
+              ],
+              "properties": {
+                "apiToken": {
                   "type": "string",
                   "minLength": 1,
                   "pattern": "^[-._a-zA-Z0-9]+$"
@@ -112,6 +170,29 @@
                   "pattern": "^[-._a-zA-Z0-9]+$"
                 },
                 "privateKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "^[-._a-zA-Z0-9]+$"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "cloudflare": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 253,
+              "pattern": "^[a-z0-9]([-a-z0-9.]*[a-z0-9])?$"
+            },
+            "keys": {
+              "type": "object",
+              "properties": {
+                "apiToken": {
                   "type": "string",
                   "minLength": 1,
                   "pattern": "^[-._a-zA-Z0-9]+$"

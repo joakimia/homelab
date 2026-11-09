@@ -1,0 +1,17 @@
+apiVersion: v2
+name: authentik
+description: authentik identity provider (upstream goauthentik chart as a pinned dependency) on the in-cluster PostgreSQL.
+
+type: application
+
+version: 0.1.0
+
+appVersion: 2026.8.5
+
+# The upstream chart is pulled from its OCI registry by scripts/install.sh (helm dependency build,
+# pinned by Chart.lock). Its bundled PostgreSQL stays off; authentik no longer needs Redis.
+# The Ingress is this chart's own template, so it follows the homelab host and ingress.tls values.
+dependencies:
+  - name: authentik
+    version: 2026.8.5
+    repository: oci://ghcr.io/goauthentik/helm-charts

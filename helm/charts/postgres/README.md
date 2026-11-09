@@ -12,7 +12,7 @@ Normally installed by the cluster profile's `deploy.sh` after `platform` and bef
 
 ## Secrets
 
-`scripts/install.sh` creates `postgres-credentials` on first install (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`). Values come from environment variables with those names, a prompt (Enter = `homelab` or a generated password), or the defaults. PgBouncer uses the same Secret. It also creates `postgres-admin` (`PASSWORD`, from `POSTGRES_ADMIN_PASSWORD`, a prompt, or generated and printed once) for the `homelab-admin` role.
+`scripts/install.sh` creates `postgres-credentials` on first install (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`). Values come from environment variables with those names, a prompt (Enter = `homelab` or a generated password), or the defaults. PgBouncer uses the same Secret. It also creates `postgres-admin` (`PASSWORD`, from `POSTGRES_ADMIN_PASSWORD`, a prompt, or generated and printed once) for the `homelab-admin` role. For every other role in the values, it generates the password Secret named in `roles.<key>.passwordSecret` if missing (it renders the setup Job with the same `--values` to find them); the app's installer copies the password into its own namespace (see `authentik`).
 
 ## Roles and databases
 

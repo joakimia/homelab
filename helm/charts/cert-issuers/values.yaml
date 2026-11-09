@@ -6,6 +6,17 @@ name: cert-issuers
 clusterIssuer:
   name: homelab-ca
 
+# Let's Encrypt issuers that prove domain ownership with a Cloudflare DNS record (DNS-01), so
+# they also work for hosts that are not reachable from the internet. Off by default; a profile
+# turns them on when its hosts are in a Cloudflare zone.
+acme:
+  enabled: false
+  # ClusterIssuer name: ACME directory. Test with the staging issuer (untrusted certificates,
+  # high rate limits) before the real one.
+  issuers:
+    letsencrypt: https://acme-v02.api.letsencrypt.org/directory
+    letsencrypt-staging: https://acme-staging-v02.api.letsencrypt.org/directory
+
 defaultEnv: {}
 
 env: {} # Override defaultEnv or add additional environment variables as needed
@@ -17,5 +28,10 @@ defaultSecrets:
     keys:
       certificate: tls.crt
       privateKey: tls.key
+  # Cloudflare API token for DNS-01 (only with acme.enabled), created by scripts/install.sh.
+  cloudflare:
+    name: cloudflare-api-token
+    keys:
+      apiToken: api-token
 
 secrets: {} # Override defaultSecrets or add additional secrets as needed

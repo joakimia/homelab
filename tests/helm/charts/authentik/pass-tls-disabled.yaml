@@ -1,0 +1,5 @@
+# Plain HTTP: no certificate annotation or tls block.
+# expect: ingressClassName: traefik
+ingress:
+  tls:
+    enabled: false

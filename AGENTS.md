@@ -12,6 +12,8 @@ The UTM VMs use bridged networking (Apple Virtualization's Shared mode isolates 
 
 The current stack is platform namespaces and policies, cert-manager with the `cert-issuers` chart, Traefik, PostgreSQL, PgBouncer, pgAdmin, Authelia, the `homelab` chart (Caddy homepage and a daily cleanup job), and the observability stack (Prometheus, Loki, Tempo, Alloy, Grafana; first deployed 2026-10-14, not yet verified end to end). Ingress serves HTTPS on host port 8443 and HTTP on 8080. Certificates come from the `homelab-ca` ClusterIssuer, backed by a name-constrained local CA in `.local/homelab-ca/` that the Mac trusts once. An Ingress hostname does not create DNS: clients need a DNS record or hosts entry.
 
+The RKE2 profile is published as `*.joakimia.dev` (dev; `joakimia.com` is reserved for a prod environment that is not started): OpenTofu in `infratructure/cloudflare/` creates the Cloudflare Tunnel, wildcard DNS, Access login (all hosts except the homepage), and a DNS-01 token; the `cloudflared` chart connects the tunnel to Traefik, and its Ingresses use the `letsencrypt` ClusterIssuer. Work in progress: not applied yet. Never run `tofu apply` unless the user asks.
+
 ## Working rules
 
 - Preserve the user's existing changes. Do not revert, overwrite, or delete unrelated work. The user often edits files while you work; build on their version.
@@ -45,6 +47,7 @@ The current stack is platform namespaces and policies, cert-manager with the `ce
 ## Repository layout
 
 - `infratructure/on-premises/virtual-machine/debian13/` — shared `install.sh` and cloud-init seeds; the jumpbox remains work in progress.
+- `infratructure/cloudflare/` — OpenTofu (versions in `mise.toml`): a `homelab-edge` module and one root per environment (`dev/`); state lives in `.local/cloudflare/`.
 - `helm/charts/` — every chart the homelab can use: upstream wrappers, own charts, the `homelab-*` base charts with the `homelab` chart that uses them, and scaffolds.
 - `helm/deployment/<env>/<cluster>/` — cluster profiles that choose and deploy charts.
 - `docs/` — architecture notes, user guides, and runbooks.

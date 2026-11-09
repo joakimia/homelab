@@ -1,0 +1,15 @@
+# An app's role with its password Secret, and its database.
+# expect: echo "Role authentik"
+# expect: name: ROLE_AUTHENTIK_PASSWORD
+# expect: name: postgres-authentik
+# expect: echo "Database authentik"
+roles:
+  authentik:
+    name: authentik
+    options: [LOGIN]
+    passwordSecret:
+      name: postgres-authentik
+      key: PASSWORD
+databases:
+  authentik:
+    owner: authentik

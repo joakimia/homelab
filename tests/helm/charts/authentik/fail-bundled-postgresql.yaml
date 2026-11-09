@@ -1,0 +1,5 @@
+# The in-cluster postgres chart is the database.
+# expect: /authentik/postgresql/enabled
+authentik:
+  postgresql:
+    enabled: true

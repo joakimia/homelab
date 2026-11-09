@@ -1,0 +1,3 @@
+# expect: homelab-frontend.siteName is required
+homelab-frontend:
+  siteName: ""

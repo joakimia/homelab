@@ -29,5 +29,9 @@ jobs:
       - uses: azure/setup-helm@v4
         with:
           version: v4.3.0
+      - uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: 1.13.9  # same as mise.toml
+          tofu_wrapper: false
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends xorriso  # seed ISO cases
       - run: tests/check.sh

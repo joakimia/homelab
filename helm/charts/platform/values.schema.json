@@ -77,6 +77,7 @@
         "pgbouncer",
         "postgres",
         "postgresSetup",
+        "authentik",
         "grafana",
         "prometheus",
         "loki",
@@ -150,6 +151,9 @@
           "$ref": "#/definitions/workloadSelector"
         },
         "postgresSetup": {
+          "$ref": "#/definitions/workloadSelector"
+        },
+        "authentik": {
           "$ref": "#/definitions/workloadSelector"
         },
         "grafana": {

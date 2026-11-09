@@ -6,7 +6,7 @@ All charts the homelab can use. A cluster profile in `../deployment/<env>/<clust
 |---|---|---|
 | [`platform`](platform/README.md) | `default` | Namespaces, Pod Security labels, NetworkPolicies, StorageClass. Always first. |
 | [`cert-manager`](cert-manager/README.md) | `hlab-platform` | Upstream cert-manager 1.21.2; issues the Ingress certificates. |
-| [`cert-issuers`](cert-issuers/README.md) | `hlab-platform` | `homelab-ca` ClusterIssuer backed by a local CA that the Mac trusts. |
+| [`cert-issuers`](cert-issuers/README.md) | `hlab-platform` | `homelab-ca` ClusterIssuer backed by a local CA that the Mac trusts; optional Let's Encrypt issuers. |
 | [`traefik`](traefik/README.md) | `hlab-networking` | Ingress controller on host ports 8080 (HTTP) and 8443 (HTTPS). |
 | [`postgres`](postgres/README.md) | `hlab-database` | PostgreSQL with a PVC; creates `postgres-credentials`. |
 | [`pgbouncer`](pgbouncer/README.md) | `hlab-database` | Connection pool on 6432. |
@@ -25,6 +25,10 @@ The [RKE2 development profile](../deployment/dev/homelab-rke2-cluster-dev/README
 |---|---|---|
 | [`local-path-provisioner`](local-path-provisioner/README.md) | `hlab-storage` | Node-local volumes for `homelab-pvc-storage` on clusters without a storage addon. |
 | [`longhorn`](longhorn/README.md) | `hlab-storage` | Upstream Longhorn, opt-in `longhorn` StorageClass with two replicas. |
+| [`authentik`](authentik/README.md) | `hlab-platform` | Upstream authentik identity provider on the in-cluster PostgreSQL, `https://authentik.joakimia.dev/`. |
+| [`cloudflared`](cloudflared/README.md) | `hlab-networking` | Cloudflare Tunnel connector: `*.joakimia.dev` from Cloudflare to Traefik. |
+
+In this profile, `cert-issuers` also adds the `letsencrypt` and `letsencrypt-staging` ClusterIssuers (DNS-01 through Cloudflare), and every Ingress uses `letsencrypt` with a `*.joakimia.dev` host.
 
 The UTM and Proxmox profiles deploy the charts listed above. The other directories are scaffolds and are not deployed.
 

@@ -1,0 +1,10 @@
+# The bare domain serves the same site, with both names in one certificate.
+# expect: - host: "www.example.com"
+# expect: - host: "example.com"
+# expect: secretName: site-tls
+name: site
+namespace: hlab-frontend-apps
+host: www.example.com
+extraHosts: [example.com]
+files:
+  index.html: hello
