@@ -18,7 +18,8 @@
 #                          fail with it. Fetches chart dependencies (needs network).
 #                          Shared _helpers.tpl files must be identical.
 #   ./check.sh format      .editorconfig basics on files in Git: final newline, no tabs, and no
-#                          trailing whitespace (Markdown excepted); relative Markdown links resolve.
+#                          trailing whitespace (Markdown excepted); relative Markdown links resolve;
+#                          every action in .github/workflows exists at its ref (needs network).
 #   ./check.sh terraform   tofu fmt -check on every *.tf file, and tofu init (no backend, locked
 #                          providers) and validate in each root (a folder with .terraform.lock.hcl).
 #                          Fetches providers (needs network).
@@ -297,6 +298,15 @@ check_format() {
     done < <(grep -oE '\]\([^)[:space:]]+\)' "$repo_root/$file" | sed -E 's/^\]\(//; s/\)$//')
   done < <(git -C "$repo_root" ls-files --cached --others --exclude-standard -- '*.md')
   [[ "$failures" -gt "$before" ]] || echo "ok Markdown links"
+
+  # Every action a workflow uses must exist at that ref (actionlint does not check this).
+  before=$failures
+  while IFS= read -r ref; do
+    git ls-remote --exit-code "https://github.com/${ref%@*}.git" "${ref#*@}" "refs/tags/${ref#*@}" "refs/heads/${ref#*@}" >/dev/null 2>&1 \
+      || git ls-remote "https://github.com/${ref%@*}.git" 2>/dev/null | grep -q "^${ref#*@}" \
+      || fail ".github/workflows: action $ref does not exist (pin an existing tag or commit)"
+  done < <(sed -nE 's#^[[:space:]-]*uses:[[:space:]]*([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)(/[^@[:space:]]*)?@([^[:space:]#]+).*#\1@\3#p' "$repo_root"/.github/workflows/*.yml | sort -u)
+  [[ "$failures" -gt "$before" ]] || echo "ok workflow actions resolve"
 }
 
 # Checks the OpenTofu code without credentials or state: formatting, then init and validate in

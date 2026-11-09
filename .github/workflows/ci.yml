@@ -33,7 +33,7 @@ jobs:
         with:
           tofu_version: 1.13.9  # same as mise.toml
           tofu_wrapper: false
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.3.3
       # Same versions as mise.toml; ansible-core 2.22 needs Python 3.13.
       - run: |
           uv tool install --python 3.13 ansible-core==2.22.0
