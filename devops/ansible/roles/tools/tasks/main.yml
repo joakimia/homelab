@@ -1,9 +1,22 @@
+# Refresh the apt cache only when a package is missing: on a Proxmox host without a
+# subscription the enterprise repository makes apt-get update fail, and the packages are
+# usually there already. dpkg-query needs no extra Python library (package_facts does).
+- name: Read the installed packages
+  ansible.builtin.command:
+    argv: [dpkg-query, -W, "-f=${Package} ${db:Status-Status}\n"]
+  register: tools_dpkg
+  changed_when: false
+  check_mode: false
+
 - name: Install packages
   become: true
   ansible.builtin.apt:
     name: "{{ tools_packages }}"
     update_cache: true
     cache_valid_time: 86400
+  vars:
+    tools_installed: "{{ tools_dpkg.stdout_lines | select('search', ' installed$') | map('split', ' ') | map('first') | list }}"
+  when: tools_packages | difference(tools_installed) | length > 0
 
 - name: Install pinned binaries
   ansible.builtin.include_tasks: binary.yml

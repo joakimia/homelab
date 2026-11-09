@@ -38,8 +38,8 @@ The repository is split by question:
 | Part | State |
 |---|---|
 | RKE2 cluster on Proxmox, all charts in the profile | Deployed, managed by Argo CD from `main` |
-| Cloudflare (dev) | Applied; state in R2 and the CD workflow are set up but not yet migrated |
-| Ansible for the Proxmox host | Tested in containers, not yet run against the host |
+| Cloudflare (dev) | Applied; state in R2, CD (`cd.yml`) applies on merge to `main` |
+| Ansible for the Proxmox host | Run against the host on 2026-11-09 (Helm, kubectl, OpenTofu pinned); tested in CI on `debian:13` |
 | UTM MicroK8s profile | Works; addresses change with the Mac's LAN |
 | Jumpbox seed, several charts (`kafka`, `rabbitmq`, `stalwart-mail`, …) | Scaffolds or work in progress |
 
