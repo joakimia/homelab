@@ -1,6 +1,6 @@
 # Cloudflare
 
-OpenTofu code for what the homelab uses in Cloudflare: a tunnel into the cluster, the wildcard DNS record, the Access login, and an API token for cert-manager. **Work in progress:** the dev environment is applied (2026-11-09); state in R2 and CI are set up but not yet run.
+OpenTofu code for what the homelab uses in Cloudflare: a tunnel into the cluster, the wildcard DNS record, the Access login, and an API token for cert-manager. The dev environment is applied; its state is in R2, and `cd.yml` plans on pull requests and applies on merge to `main`.
 
 ```text
 Browser ─HTTPS─▶ Cloudflare edge (*.<domain> certificate, Access login)

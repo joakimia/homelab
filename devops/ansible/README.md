@@ -1,6 +1,6 @@
 # Ansible for the Proxmox host
 
-**Work in progress.** Tested against `debian:13` containers (amd64 and arm64), not yet run against the Proxmox host.
+Run against the Proxmox host on 2026-11-09 (second run `changed=0`), and tested in CI against a clean `debian:13` host. Later it will also cover secrets and other host setup.
 
 The playbook prepares the Proxmox host (`homelab-server-0`) to deploy the [RKE2 profile](../../helm/deployment/dev/homelab-rke2-cluster-dev/README.md) with `deploy.sh --local`. Later it will also bootstrap secrets and similar host-side setup.
 
@@ -51,6 +51,8 @@ A second run should report `changed=0`. Things to watch out for:
 
 - `--check` needs `python3-apt` on the host; a normal run installs it.
 - `--check` cannot download, so it only reports which binaries it would install.
-- The package task runs `apt-get update` at most once a day. If the Proxmox enterprise repository is enabled without a subscription, that update fails; use the no-subscription repository instead.
+- The package task runs `apt-get update` only when a package is missing. If the Proxmox enterprise repository is enabled without a subscription, that update fails; disable it (`Enabled: no` in `/etc/apt/sources.list.d/pve-enterprise.sources`) and use the no-subscription repository.
+- The first run may warn that `/root/.ansible/tmp` was created; that is harmless.
+- When nothing needs to change, `--check --diff` runs without `--ask-become-pass`: only installs use sudo.
 
 Test it without the real host: `tests/check.sh ansible` lints it, and `tests/check.sh devops` runs it twice against a clean `debian:13` container over SSH (fixtures in [`tests/devops/ansible`](../../tests/devops/ansible/)); the second run must report `changed=0`. CI runs both.
