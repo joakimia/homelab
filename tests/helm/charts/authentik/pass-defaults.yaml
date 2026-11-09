@@ -1,0 +1,9 @@
+# Credentials come from Secrets, the database from the postgres chart, and the pods are hardened.
+# expect: cert-manager.io/cluster-issuer: "homelab-ca"
+# expect: name: authentik-credentials
+# expect: name: AUTHENTIK_POSTGRESQL__PASSWORD
+# expect: name: authentik-postgres
+# expect: AUTHENTIK_POSTGRESQL__HOST: "cG9zdGdyZXMuaGxhYi1kYXRhYmFzZS5zdmMuY2x1c3Rlci5sb2NhbA=="
+# expect: readOnlyRootFilesystem: true
+# expect: automountServiceAccountToken: false
+# expect: runAsNonRoot: true

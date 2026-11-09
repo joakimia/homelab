@@ -1,0 +1,4 @@
+# expect: /networkPolicies/authentik': missing property 'podSelector'
+networkPolicies:
+  authentik:
+    podSelector: null

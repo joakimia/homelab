@@ -142,8 +142,8 @@ deploy_releases() {
   echo "Certificates (READY True once cert-manager has signed them):"
   kubectl get certificate -A
   echo
-  echo "Point pgadmin.homelab.com and homepage.homelab.com at the VM IP (DNS or /etc/hosts), then open https://homepage.homelab.com:8443/"
-  echo "Without DNS: curl --cacert .local/homelab-ca/ca.crt --resolve homepage.homelab.com:8443:<VM-IP> https://homepage.homelab.com:8443/"
+  echo "Open https://homepage.joakimia.dev/ (through the Cloudflare Tunnel; other hosts ask for the Access login)."
+  echo "Past Cloudflare, on the LAN: curl --resolve homepage.joakimia.dev:8443:<VM-IP> https://homepage.joakimia.dev:8443/"
 }
 
 case "${1:-}" in

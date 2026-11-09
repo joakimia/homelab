@@ -63,8 +63,15 @@ nunit-*.xml
 
 *.iso
 
+# OpenTofu working folders and state (the state holds secrets; it belongs in .local/).
+.terraform/
+*.tfstate
+*.tfstate.*
+
 # Chart dependencies, fetched by helm dependency build from Chart.lock.
 helm/charts/*/charts/
 
 # Finder metadata
 .DS_Store
+
+.env.local

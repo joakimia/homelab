@@ -3,6 +3,9 @@
 #
 #   ./install.sh [helm flags]   Default: create and trust the CA if needed, create the
 #                               homelab-ca Secret if missing, then helm upgrade --install.
+#                               With acme.enabled in the values, also creates the
+#                               cloudflare-api-token Secret if missing, from
+#                               $CLOUDFLARE_DNS_API_TOKEN or a hidden prompt.
 #   ./install.sh --ca-only      Only create and trust the CA (no cluster).
 #
 # CA folder: $HOMELAB_CA_DIR, default ./.local/homelab-ca (ignored by Git; keep ca.key private).
@@ -12,6 +15,9 @@ export LC_ALL=C  # English messages from bash and tools, whatever the local lang
 chart_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 namespace=hlab-platform
 secret_name=homelab-ca
+# Must match defaultSecrets.cloudflare in values.yaml.
+cloudflare_secret=cloudflare-api-token
+cloudflare_key=api-token
 ca_dir="${HOMELAB_CA_DIR:-$PWD/.local/homelab-ca}"
 # Name constraints: the CA is only valid for these domains. Changing them needs a new CA.
 ca_domains="homelab.com home.arpa"
@@ -110,6 +116,31 @@ create_ca_secret() {
   echo "Created the $secret_name Secret from $ca_dir."
 }
 
+# Creates the Cloudflare API token Secret for DNS-01 if the values turn on the ACME issuers and
+# the Secret is missing; never overwrites it. Terraform creates the token
+# (infratructure/cloudflare: tofu output -raw cert_manager_api_token). The token goes through a
+# private temporary file (token_file, global for the EXIT trap), not the command line.
+create_cloudflare_secret() {
+  local token=${CLOUDFLARE_DNS_API_TOKEN:-}
+  helm template cert-issuers "$chart_dir" "$@" | grep -q 'dns01:' || return 0
+  if kubectl get secret "$cloudflare_secret" -n "$namespace" >/dev/null 2>&1; then
+    echo "Reusing the $cloudflare_secret Secret."
+    return 0
+  fi
+  if [[ -z "$token" && -t 0 ]]; then
+    read -r -s -p "Cloudflare API token for DNS-01 (tofu output -raw cert_manager_api_token): " token
+    echo >&2
+  fi
+  [[ -n "$token" ]] || { echo "Set CLOUDFLARE_DNS_API_TOKEN (or run in a terminal) to create the $cloudflare_secret Secret." >&2; exit 1; }
+  token_file="$(umask 077 && mktemp "${TMPDIR:-/tmp}/cloudflare-token.XXXXXX")"
+  trap 'rm -f "$token_file"' EXIT
+  printf '%s' "$token" > "$token_file"
+  kubectl create secret generic "$cloudflare_secret" -n "$namespace" \
+    --from-file="$cloudflare_key"="$token_file" >/dev/null
+  rm -f "$token_file"
+  echo "Created the $cloudflare_secret Secret."
+}
+
 # Needs cert-manager (CRDs and webhook) installed first.
 install_release() {
   require helm
@@ -117,6 +148,7 @@ install_release() {
   kubectl get namespace "$namespace" >/dev/null || { echo "Namespace $namespace is missing; install the platform chart with namespaces.platform.enabled=true first." >&2; exit 1; }
   kubectl get crd clusterissuers.cert-manager.io >/dev/null 2>&1 || { echo "cert-manager CRDs are missing; install the cert-manager chart first." >&2; exit 1; }
   create_ca_secret
+  create_cloudflare_secret "$@"
   trust_ca
   helm upgrade --install cert-issuers "$chart_dir" --namespace "$namespace" "$@"
 }

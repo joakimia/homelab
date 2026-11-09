@@ -2,7 +2,9 @@
 # Installs or upgrades the PostgreSQL release.
 # Creates postgres-credentials (superuser) and postgres-admin (password for roles.admin) if
 # missing: each value comes from $<KEY>, else a prompt in a terminal (Enter = default or
-# generated), else the default. A generated admin password is printed once.
+# generated), else the default. A generated admin password is printed once. Password Secrets
+# for other roles in the values (for example an app's role from the profile overlay) are
+# generated if missing; the app's installer copies the password into its namespace.
 # Extra arguments are passed to helm upgrade, for example --values <profile overlay>.
 set -euo pipefail
 export LC_ALL=C  # English messages from bash and tools, whatever the local language
@@ -67,6 +69,27 @@ create_admin_secret() {
   fi
 }
 
+# Generates the password Secret of every other role the setup Job reads (roles.<key>.passwordSecret
+# in the values passed to this script) if it is missing.
+create_role_secrets() {
+  local ref name key
+  while IFS= read -r ref; do
+    name=${ref%%/*}
+    key=${ref#*/}
+    kubectl get secret "$name" -n "$namespace" >/dev/null 2>&1 && continue
+    kubectl create secret generic "$name" -n "$namespace" --from-literal="$key=$(openssl rand -hex 24)" >/dev/null
+    echo "Created $name (generated password for a database role)."
+  done < <(role_secret_refs "$@")
+}
+
+# Prints "<secret>/<key>" for each role password in the rendered setup Job.
+role_secret_refs() {
+  { helm template postgres "$chart_dir" --namespace "$namespace" "$@" --show-only templates/job.yaml 2>/dev/null || true; } \
+    | awk '/- name: ROLE_[A-Z0-9_]+_PASSWORD$/ { role = 1; next }
+           role && $1 == "name:" { name = $2 }
+           role && $1 == "key:" { print name "/" $2; role = 0 }'
+}
+
 for command in helm kubectl openssl; do
   command -v "$command" >/dev/null || { echo "Required command not found: $command" >&2; exit 1; }
 done
@@ -75,4 +98,5 @@ kubectl get namespace "$namespace" >/dev/null || { echo "Namespace $namespace is
 
 create_secret
 create_admin_secret
+create_role_secrets "$@"
 helm upgrade --install postgres "$chart_dir" --namespace "$namespace" "$@"

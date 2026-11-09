@@ -1,0 +1,82 @@
+namespace: hlab-networking
+
+name: cloudflared
+
+image:
+  repository: cloudflare/cloudflared
+  tag: 2026.10.7
+  pullPolicy: IfNotPresent
+
+# Each replica is a separate connector; Cloudflare spreads requests over all of them.
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+
+podSecurityContext: {}
+
+# /ready answers 200 once the connector has a connection to Cloudflare.
+probes:
+  startup:
+    httpGet:
+      path: /ready
+      port: metrics
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 24
+  readiness:
+    httpGet:
+      path: /ready
+      port: metrics
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+  liveness:
+    httpGet:
+      path: /ready
+      port: metrics
+    initialDelaySeconds: 0
+    periodSeconds: 20
+    timeoutSeconds: 2
+    failureThreshold: 6
+
+# Metrics and the /ready endpoint. The tunnel itself only makes outbound connections.
+ports:
+  metrics:
+    containerPort: 2000
+
+# The tunnel's ingress rules live in Cloudflare (infratructure/cloudflare), not here.
+defaultEnv:
+  # The tunnel Secret's mountPath, after secrets overrides it.
+  TUNNEL_TOKEN_FILE: "{{ (include \"homelab.secrets\" . | fromYaml).tunnel.mountPath }}/token"
+  TUNNEL_METRICS: "0.0.0.0:{{ .Values.ports.metrics.containerPort }}"
+  TUNNEL_LOGLEVEL: info
+  # The image is pinned; updates come from the chart.
+  NO_AUTOUPDATE: true
+
+env: {} # Override defaultEnv or add additional environment variables as needed
+
+defaultSecrets:
+  # Tunnel token, created by scripts/install.sh.
+  tunnel:
+    name: cloudflared-tunnel
+    mountPath: /etc/cloudflared/tunnel
+    keys: [token]
+
+secrets: {} # Override defaultSecrets or add additional secrets as needed

@@ -99,6 +99,10 @@ networkPolicies:
   postgresSetup:
     podSelector:
       app.kubernetes.io/name: postgres-setup
+  # authentik server and worker (hlab-platform): Traefik in, PostgreSQL out.
+  authentik:
+    podSelector:
+      app.kubernetes.io/name: authentik
   grafana:
     podSelector:
       app.kubernetes.io/name: grafana

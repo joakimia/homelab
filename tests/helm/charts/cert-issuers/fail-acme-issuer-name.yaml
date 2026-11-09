@@ -1,0 +1,6 @@
+# ClusterIssuer names must be valid Kubernetes names.
+# expect: invalid propertyName 'Lets_Encrypt'
+acme:
+  enabled: true
+  issuers:
+    Lets_Encrypt: https://acme-v02.api.letsencrypt.org/directory

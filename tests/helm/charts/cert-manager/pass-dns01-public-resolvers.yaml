@@ -1,0 +1,4 @@
+# The controller checks DNS-01 records on public resolvers by default.
+# expect: --dns01-recursive-nameservers-only
+# expect: --dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53
+{}

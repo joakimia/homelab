@@ -1,0 +1,8 @@
+# Two connectors, and the token file follows the Secret's mount path.
+# expect: replicas: 2
+# expect: value: "/run/tunnel/token"
+# expect: mountPath: /run/tunnel
+replicaCount: 2
+secrets:
+  tunnel:
+    mountPath: /run/tunnel

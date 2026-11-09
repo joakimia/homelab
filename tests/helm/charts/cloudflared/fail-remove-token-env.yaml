@@ -1,0 +1,3 @@
+# expect: missing property 'TUNNEL_TOKEN_FILE'
+defaultEnv:
+  TUNNEL_TOKEN_FILE: null

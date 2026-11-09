@@ -5,3 +5,9 @@ longhorn:
     defaultClassReplicaCount: 2
   defaultSettings:
     defaultReplicaCount: 2
+
+# Served as https://longhorn.joakimia.dev/ through the Cloudflare Tunnel, with a Let's Encrypt certificate.
+host: longhorn.joakimia.dev
+ingress:
+  tls:
+    clusterIssuer: letsencrypt

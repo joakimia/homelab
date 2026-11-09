@@ -1,22 +1,465 @@
+{{- $page := index .Values "homelab-frontend" -}}
 <!doctype html>
 <html lang="en">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Homelab</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="{{ $page.siteName }}: a hobby Kubernetes lab for learning Linux, cloud-init, Helm, and infrastructure automation.">
+  <title>{{ $page.siteName }}</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --bg-grid: rgba(15, 23, 42, .05);
+      --surface: #ffffff;
+      --surface-2: #eef2f8;
+      --text: #0f172a;
+      --muted: #475569;
+      --border: #d7deea;
+      --accent: #0e7490;
+      --accent-2: #6d28d9;
+      --accent-soft: rgba(14, 116, 144, .1);
+      --ok: #15803d;
+      --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 8px 24px rgba(15, 23, 42, .06);
+      --l1: #0e7490;
+      --l2: #2563eb;
+      --l3: #7c3aed;
+      --l4: #c2410c;
+      --l5: #b45309;
+      --l6: #15803d;
+      color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0a0f1d;
+        --bg-grid: rgba(148, 163, 184, .06);
+        --surface: #111a2e;
+        --surface-2: #17223a;
+        --text: #e7ecf5;
+        --muted: #9eabc3;
+        --border: #26334f;
+        --accent: #5eead4;
+        --accent-2: #b39dfb;
+        --accent-soft: rgba(94, 234, 212, .1);
+        --ok: #4ade80;
+        --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 12px 32px rgba(0, 0, 0, .25);
+        --l1: #5eead4;
+        --l2: #7dabff;
+        --l3: #b39dfb;
+        --l4: #fb923c;
+        --l5: #fbbf24;
+        --l6: #4ade80;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(60rem 30rem at 85% -10%, var(--accent-soft), transparent 70%),
+        linear-gradient(var(--bg-grid) 1px, transparent 1px) 0 0 / 32px 32px,
+        linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px) 0 0 / 32px 32px,
+        var(--bg);
+      color: var(--text);
+      font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    a { color: var(--accent); }
+
+    a:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+    .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+
+    /* Header */
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 20px 0; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--text); text-decoration: none; }
+    .brand svg { width: 32px; height: 32px; }
+    .nav { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+    .nav a { display: block; padding: 6px 12px; border-radius: 999px; color: var(--muted); text-decoration: none; font-size: 14px; }
+    .nav a:hover { background: var(--surface-2); color: var(--text); }
+
+    /* Hero */
+    .hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center; padding: 40px 0 64px; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 13px; }
+    .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--l5); }
+    h1 { margin: 16px 0 12px; font-size: clamp(2.4rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -.03em; }
+    h1 span { background: linear-gradient(100deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .lead { max-width: 36rem; margin: 0 0 24px; color: var(--muted); font-size: 1.125rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn { display: inline-block; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 600; text-decoration: none; }
+    .btn.primary { border-color: transparent; background: var(--text); color: var(--bg); }
+    .facts { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 28px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 14px; }
+    .facts b { color: var(--text); }
+    .art { width: 100%; max-width: 420px; justify-self: center; }
+
+    /* Sections */
+    section { padding: 48px 0; }
+    .kicker { margin: 0; color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    h2 { margin: 4px 0 8px; font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -.02em; }
+    .intro { max-width: 44rem; margin: 0 0 28px; color: var(--muted); }
+    .card { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+
+    /* Services */
+    .services { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+    .svc { display: flex; align-items: center; gap: 14px; height: 100%; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); color: var(--text); text-decoration: none; transition: transform .15s, border-color .15s; }
+    .svc:hover { transform: translateY(-2px); border-color: var(--hue, var(--accent)); }
+    .svc-icon { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--surface-2); color: var(--hue, var(--accent)); font-weight: 800; font-size: 20px; box-shadow: inset 0 0 0 1px var(--border); }
+    .svc-text { display: grid; min-width: 0; }
+    .svc-title { font-weight: 650; }
+    .svc-host { overflow: hidden; color: var(--muted); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+    .svc-go { flex: none; width: 18px; height: 18px; margin-left: auto; color: var(--muted); }
+    .svc[data-id=auth] { --hue: var(--l3); }
+    .svc[data-id=grafana] { --hue: var(--l4); }
+    .svc[data-id=longhorn] { --hue: var(--l2); }
+    .svc[data-id=pgadmin] { --hue: var(--l2); }
+    .svc[data-id=prometheus] { --hue: var(--l4); }
+    .svc[data-id=traefik] { --hue: var(--l1); }
+    .empty { padding: 20px; color: var(--muted); }
+
+    /* Request path */
+    .flow { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+    .flow::before { content: ""; position: absolute; top: 46px; left: 8%; right: 8%; height: 2px; background: repeating-linear-gradient(90deg, var(--accent) 0 8px, transparent 8px 16px); opacity: .6; animation: march 1.2s linear infinite; }
+    .step { position: relative; padding: 16px 14px; text-align: center; counter-increment: step; }
+    .step svg { position: relative; width: 60px; height: 60px; padding: 14px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--accent); }
+    .step.public svg { border-color: var(--accent); }
+    .step h3 { margin: 10px 0 2px; font-size: 15px; }
+    .step h3::before { content: counter(step) ". "; color: var(--muted); font-weight: 500; }
+    .step p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .note { margin: 20px 0 0; color: var(--muted); font-size: 14px; }
+    .note b { color: var(--text); }
+    @keyframes march { to { background-position: 16px 0; } }
+
+    /* Cluster */
+    .host { position: relative; padding: 20px; }
+    .host-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .host-head svg { flex: none; width: 40px; height: 40px; color: var(--l4); }
+    .host-head h3, .vm h3 { margin: 0; font-size: 17px; }
+    .host-head p, .vm p { margin: 0; color: var(--muted); font-size: 14px; }
+    .vms { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .vm { padding: 18px; border: 1px dashed var(--border); border-radius: 14px; background: var(--surface-2); }
+    .vm-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .vm-head svg { flex: none; width: 36px; height: 36px; }
+    .role { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; vertical-align: 2px; }
+    .vm ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { display: inline-block; padding: 3px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px; }
+    .storage { display: flex; align-items: center; gap: 16px; margin-top: 16px; padding: 14px 18px; border-radius: 14px; background: linear-gradient(90deg, var(--accent-soft), transparent); border: 1px solid var(--border); }
+    .storage svg { flex: none; width: 120px; height: 40px; color: var(--l2); }
+    .storage p { margin: 0; color: var(--muted); font-size: 14px; }
+    .storage b { color: var(--text); }
+
+    /* Stack */
+    .layers { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .layer { display: grid; grid-template-columns: 190px 1fr; gap: 16px; align-items: center; padding: 14px 18px; border-left: 4px solid var(--c); }
+    .layer h3 { margin: 0; font-size: 15px; }
+    .layer h3 small { display: block; color: var(--muted); font-size: 12px; font-weight: 500; }
+    .layer ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .layer .arrow { align-self: center; color: var(--muted); }
+
+    footer { padding: 40px 0 56px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--border); margin-top: 32px; }
+
+    /* Hero illustration */
+    .led { animation: blink 2.4s ease-in-out infinite; }
+    .led.d1 { animation-delay: .4s; }
+    .led.d2 { animation-delay: 1.1s; }
+    .led.d3 { animation-delay: 1.7s; }
+    .tunnel { stroke-dasharray: 6 8; animation: march-svg 1s linear infinite; }
+    @keyframes blink { 50% { opacity: .25; } }
+    @keyframes march-svg { to { stroke-dashoffset: -14; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; padding-top: 16px; }
+      .art { max-width: 300px; }
+      .flow { grid-template-columns: 1fr; gap: 8px; }
+      .flow::before { top: 24px; bottom: 24px; left: 43px; right: auto; width: 2px; height: auto; background: repeating-linear-gradient(180deg, var(--accent) 0 8px, transparent 8px 16px); animation: none; }
+      .step { display: grid; grid-template-columns: 60px 1fr; column-gap: 14px; padding: 6px 14px; text-align: left; align-items: center; }
+      .step svg { grid-row: span 2; }
+      .step h3 { margin: 0; }
+    }
+
+    @media (max-width: 640px) {
+      .wrap { padding: 0 16px; }
+      .nav { display: none; }
+      .vms { grid-template-columns: 1fr; }
+      .layer { grid-template-columns: 1fr; gap: 8px; }
+      .storage { flex-direction: column; align-items: flex-start; }
+      section { padding: 36px 0; }
+    }
+  </style>
 </head>
 
 <body>
-  <h1>Homelab</h1>
-  <p>Welcome. This page is served from Kubernetes through Traefik.</p>
-  <ul>
-    {{- range $id, $link := (index .Values "homelab-frontend").links }}
-    {{- if $link.enabled }}
-    <li><a href="{{ $link.url }}">{{ $link.title }}</a></li>
-    {{- end }}
-    {{- end }}
-  </ul>
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="#">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="3" y="5" width="26" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="2" />
+          <rect x="3" y="18" width="26" height="9" rx="2.5" fill="none" stroke="currentColor" stroke-width="2" />
+          <circle cx="8.5" cy="9.5" r="1.6" fill="var(--accent)" />
+          <circle cx="8.5" cy="22.5" r="1.6" fill="var(--accent-2)" />
+          <path d="M14 9.5h10M14 22.5h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".4" />
+        </svg>
+        {{ $page.siteName }}
+      </a>
+      <nav aria-label="Sections">
+        <ul class="nav">
+          <li><a href="#services">Services</a></li>
+          <li><a href="#path">Request path</a></li>
+          <li><a href="#cluster">Cluster</a></li>
+          <li><a href="#stack">Stack</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main>
+      <div class="hero">
+        <div>
+          <span class="badge">Hobby lab, built to learn, not production</span>
+          <h1><span>{{ $page.siteName }}</span></h1>
+          <p class="lead">A small Kubernetes cluster at home for learning Linux, cloud-init, Helm, and
+            infrastructure automation. Everything here is rebuilt from code, and it breaks from time to time.</p>
+          <div class="actions">
+            <a class="btn primary" href="#services">Open a service</a>
+            <a class="btn" href="#path">How it fits together</a>
+          </div>
+          <ul class="facts">
+            <li><b>1</b> Proxmox host</li>
+            <li><b>2</b> Debian 13 VMs</li>
+            <li><b>RKE2</b> Kubernetes</li>
+            <li><b>Helm</b> for everything</li>
+          </ul>
+        </div>
+
+        <svg class="art" viewBox="0 0 360 320" role="img" aria-label="Illustration: a server rack connected to the cloud through a tunnel">
+          <defs>
+            <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="var(--accent)" stop-opacity=".25" />
+              <stop offset="1" stop-color="var(--accent-2)" stop-opacity=".2" />
+            </linearGradient>
+          </defs>
+          <circle cx="170" cy="180" r="130" fill="url(#glow)" />
+          <!-- cloud -->
+          <path d="M262 88a22 22 0 0 1 2-44 30 30 0 0 1 56 6 19 19 0 0 1 2 38z" fill="var(--surface)" stroke="var(--accent-2)" stroke-width="2.5" />
+          <path class="tunnel" d="M290 92 C 290 140, 250 130, 222 150" fill="none" stroke="var(--accent-2)" stroke-width="2.5" stroke-linecap="round" />
+          <!-- rack -->
+          <rect x="96" y="96" width="132" height="190" rx="12" fill="var(--surface)" stroke="var(--text)" stroke-opacity=".7" stroke-width="2.5" />
+          <g stroke="var(--text)" stroke-opacity=".5" stroke-width="2" fill="var(--surface-2)">
+            <rect x="110" y="112" width="104" height="36" rx="6" />
+            <rect x="110" y="158" width="104" height="36" rx="6" />
+            <rect x="110" y="204" width="104" height="36" rx="6" />
+          </g>
+          <g stroke="var(--muted)" stroke-width="2" stroke-linecap="round" opacity=".7">
+            <path d="M150 130h50M150 176h50M150 222h50" />
+          </g>
+          <circle class="led" cx="124" cy="130" r="4" fill="var(--ok)" />
+          <circle class="led d1" cx="136" cy="130" r="4" fill="var(--accent)" />
+          <circle class="led d2" cx="124" cy="176" r="4" fill="var(--ok)" />
+          <circle class="led d3" cx="136" cy="176" r="4" fill="var(--accent-2)" />
+          <circle class="led d1" cx="124" cy="222" r="4" fill="var(--ok)" />
+          <circle cx="136" cy="222" r="4" fill="var(--muted)" opacity=".5" />
+          <rect x="110" y="252" width="104" height="18" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5" />
+          <path d="M120 261h84" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3 5" stroke-linecap="round" />
+          <path d="M90 286h144" stroke="var(--text)" stroke-opacity=".4" stroke-width="3" stroke-linecap="round" />
+          <!-- wheel -->
+          <g transform="translate(70 92)" stroke="var(--accent)" stroke-width="2.5" fill="var(--surface)">
+            <circle r="24" />
+            <circle r="6" fill="var(--accent)" />
+            <path d="M0-6v-14M5.7-1.9l13.3-4.3M3.5 4.9l8.2 11.3M-3.5 4.9l-8.2 11.3M-5.7-1.9l-13.3-4.3" stroke-linecap="round" />
+          </g>
+        </svg>
+      </div>
+
+      <section id="services" aria-labelledby="services-title">
+        <p class="kicker">Services</p>
+        <h2 id="services-title">What runs here</h2>
+        <p class="intro">The web interfaces this cluster serves. Apart from this page, each one asks you to log in first.</p>
+        {{- $shown := 0 }}
+        <ul class="services">
+          {{- range $id, $link := $page.links }}
+          {{- if $link.enabled }}
+          {{- $shown = add1 $shown }}
+          <li><a href="{{ $link.url }}" class="svc" data-id="{{ $id }}"><span class="svc-icon" aria-hidden="true">{{ $link.title | trunc 1 | upper }}</span><span class="svc-text"><span class="svc-title">{{ $link.title }}</span><span class="svc-host mono">{{ (urlParse $link.url).hostname }}</span></span><svg class="svc-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></a></li>
+          {{- end }}
+          {{- end }}
+        </ul>
+        {{- if eq $shown 0 }}
+        <p class="card empty">No services are linked yet.</p>
+        {{- end }}
+      </section>
+
+      <section id="path" aria-labelledby="path-title">
+        <p class="kicker">Request path</p>
+        <h2 id="path-title">How a request gets here</h2>
+        <p class="intro">No ports are open at home. The cluster dials out to Cloudflare, and requests come back through that tunnel.</p>
+        <ol class="flow">
+          <li class="step public">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M7 6.5h.01M10 6.5h.01" /></svg>
+            <h3>Browser</h3>
+            <p>You, over HTTPS</p>
+          </li>
+          <li class="step">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z" /></svg>
+            <h3>Cloudflare edge</h3>
+            <p>TLS, caching, and Access login for every app except this page</p>
+          </li>
+          <li class="step">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20V12a9 9 0 0 1 18 0v8" /><path d="M8 20v-8a4 4 0 0 1 8 0v8" /></svg>
+            <h3>Tunnel</h3>
+            <p>Outbound only, opened from home</p>
+          </li>
+          <li class="step">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 21 7v10l-9 5-9-5V7z" /><path d="M12 22V12M21 7l-9 5-9-5" /></svg>
+            <h3>cloudflared</h3>
+            <p>Connector pod in the cluster</p>
+          </li>
+          <li class="step">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6M14 6h6M14 18h6M10 12l4-6M10 12l4 6" /><circle cx="4" cy="12" r="1.5" /></svg>
+            <h3>Traefik</h3>
+            <p>Ingress, routes by host name</p>
+          </li>
+          <li class="step">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>
+            <h3>Apps</h3>
+            <p>This page, Grafana, pgAdmin, and friends</p>
+          </li>
+        </ol>
+        <p class="note"><b>Certificates:</b> Cloudflare terminates TLS at the edge; inside the cluster, cert-manager gets certificates from Let's Encrypt.</p>
+      </section>
+
+      <section id="cluster" aria-labelledby="cluster-title">
+        <p class="kicker">Cluster</p>
+        <h2 id="cluster-title">Two nodes on one box</h2>
+        <p class="intro">One Proxmox host runs two Debian 13 virtual machines. cloud-init sets them up, and RKE2 joins them into one Kubernetes cluster.</p>
+        <div class="card host">
+          <div class="host-head">
+            <svg viewBox="0 0 40 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="4" y="6" width="32" height="28" rx="4" /><path d="M4 16h32M4 25h32" /><circle cx="10" cy="11" r="1" /><circle cx="10" cy="20.5" r="1" /><circle cx="10" cy="29.5" r="1" /></svg>
+            <div>
+              <h3>Proxmox VE host</h3>
+              <p>One physical machine, the hypervisor</p>
+            </div>
+          </div>
+          <div class="vms">
+            <div class="vm">
+              <div class="vm-head">
+                <svg viewBox="0 0 36 36" aria-hidden="true"><rect x="2" y="4" width="32" height="24" rx="4" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.5" /><path d="M9 12l5 4-5 4M17 20h9" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M12 33h12" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" /></svg>
+                <div>
+                  <h3 class="mono">cp0<span class="role">control plane</span></h3>
+                  <p>Debian 13 VM</p>
+                </div>
+              </div>
+              <ul>
+                <li class="chip">RKE2 server</li>
+                <li class="chip">API server</li>
+                <li class="chip">etcd</li>
+                <li class="chip">Longhorn disk</li>
+              </ul>
+            </div>
+            <div class="vm">
+              <div class="vm-head">
+                <svg viewBox="0 0 36 36" aria-hidden="true"><rect x="2" y="4" width="32" height="24" rx="4" fill="var(--surface)" stroke="var(--accent-2)" stroke-width="2.5" /><path d="M9 12l5 4-5 4M17 20h9" fill="none" stroke="var(--accent-2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M12 33h12" stroke="var(--muted)" stroke-width="2.5" stroke-linecap="round" /></svg>
+                <div>
+                  <h3 class="mono">wk0<span class="role">worker</span></h3>
+                  <p>Debian 13 VM</p>
+                </div>
+              </div>
+              <ul>
+                <li class="chip">RKE2 agent</li>
+                <li class="chip">App workloads</li>
+                <li class="chip">Longhorn disk</li>
+              </ul>
+            </div>
+          </div>
+          <div class="storage">
+            <svg viewBox="0 0 120 40" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5">
+              <ellipse cx="18" cy="9" rx="14" ry="5" />
+              <path d="M4 9v20c0 2.8 6.3 5 14 5s14-2.2 14-5V9M4 19c0 2.8 6.3 5 14 5s14-2.2 14-5" />
+              <ellipse cx="102" cy="9" rx="14" ry="5" />
+              <path d="M88 9v20c0 2.8 6.3 5 14 5s14-2.2 14-5V9M88 19c0 2.8 6.3 5 14 5s14-2.2 14-5" />
+              <path class="tunnel" d="M40 20h40" stroke-linecap="round" />
+              <path d="M44 15l-5 5 5 5M76 15l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <p><b>Longhorn</b> replicates volumes across both nodes, so data survives losing one disk.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="stack" aria-labelledby="stack-title">
+        <p class="kicker">Stack</p>
+        <h2 id="stack-title">The layers</h2>
+        <p class="intro">Each layer is a Helm chart or a seed in the repository, deployed in order from the bottom up.</p>
+        <ul class="layers">
+          <li class="card layer" style="--c: var(--l4)">
+            <h3>Observability<small>metrics, logs, traces</small></h3>
+            <ul>
+              <li class="chip">Alloy</li>
+              <li class="arrow" aria-hidden="true">&rarr;</li>
+              <li class="chip">Prometheus</li>
+              <li class="chip">Loki</li>
+              <li class="chip">Tempo</li>
+              <li class="arrow" aria-hidden="true">&rarr;</li>
+              <li class="chip">Grafana</li>
+            </ul>
+          </li>
+          <li class="card layer" style="--c: var(--l2)">
+            <h3>Data<small>databases</small></h3>
+            <ul>
+              <li class="chip">PostgreSQL</li>
+              <li class="chip">PgBouncer</li>
+              <li class="chip">pgAdmin</li>
+            </ul>
+          </li>
+          <li class="card layer" style="--c: var(--l3)">
+            <h3>Identity<small>single sign-on</small></h3>
+            <ul>
+              <li class="chip">Authentik</li>
+              <li class="chip">Cloudflare Access</li>
+            </ul>
+          </li>
+          <li class="card layer" style="--c: var(--l1)">
+            <h3>Edge and TLS<small>getting in</small></h3>
+            <ul>
+              <li class="chip">cloudflared</li>
+              <li class="chip">Traefik</li>
+              <li class="chip">cert-manager</li>
+              <li class="chip">Let's Encrypt</li>
+            </ul>
+          </li>
+          <li class="card layer" style="--c: var(--l5)">
+            <h3>Platform<small>Kubernetes and storage</small></h3>
+            <ul>
+              <li class="chip">RKE2</li>
+              <li class="chip">Longhorn</li>
+              <li class="chip">Helm</li>
+            </ul>
+          </li>
+          <li class="card layer" style="--c: var(--l6)">
+            <h3>Machines<small>where it all runs</small></h3>
+            <ul>
+              <li class="chip">Proxmox VE</li>
+              <li class="chip">Debian 13</li>
+              <li class="chip">cloud-init</li>
+            </ul>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>{{ $page.siteName }} is a hobby and learning project. Expect experiments and downtime.
+        This page is static HTML from a Helm chart, served by Caddy as a non-root user on a read-only file system.</p>
+    </footer>
+  </div>
 </body>
 
 </html>

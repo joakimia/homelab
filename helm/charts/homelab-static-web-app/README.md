@@ -12,6 +12,7 @@ Normally included by the `homelab` chart. As its own release: `./scripts/install
 |---|---|---|
 | `namespace` | `hlab-frontend-apps` | Namespace of the resources (Traefik may reach every pod there). |
 | `name` / `host` | required | Resource names and `app.kubernetes.io/name`; Ingress hostname. |
+| `extraHosts` | `[]` | More hostnames for the same site (for example the bare domain), in the same Ingress and certificate. |
 | `filesConfigMap` | `""` | Existing ConfigMap with the site files (one key per file), for example from a parent chart's own folder; then `files` is not used. |
 | `files` | placeholder `index.html` | File name → content, when `filesConfigMap` is empty. Flat names only. |
 | `ingress.className` | `traefik` | IngressClass of the Ingress. |

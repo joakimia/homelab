@@ -1,0 +1,9 @@
+# Let's Encrypt issuers solve DNS-01 with the Cloudflare token Secret.
+# expect: name: letsencrypt
+# expect: name: letsencrypt-staging
+# expect: server: https://acme-v02.api.letsencrypt.org/directory
+# expect: name: letsencrypt-account-key
+# expect: name: cloudflare-api-token
+# expect: key: api-token
+acme:
+  enabled: true

@@ -3,7 +3,8 @@
 # script, so a local run reproduces CI. Nothing here touches a VM or cluster.
 #
 #   ./check.sh             Default: run every check below.
-#   ./check.sh scripts     bash -n, shellcheck, and export LC_ALL=C on every non-empty *.sh file.
+#   ./check.sh scripts     bash -n, shellcheck, export LC_ALL=C, and no kubectl --from-file from
+#                          /dev/stdin (fails over SSH) on every non-empty *.sh file.
 #   ./check.sh seeds       Parse each cloud-init.yaml, require #cloud-config, and run
 #                          dash -n on every runcmd script block (cloud-init runs them with sh).
 #   ./check.sh charts      helm lint and helm template for each chart in each deploy-set.json,
@@ -16,6 +17,9 @@
 #                          Shared _helpers.tpl files must be identical.
 #   ./check.sh format      .editorconfig basics on files in Git: final newline, no tabs, and no
 #                          trailing whitespace (Markdown excepted); relative Markdown links resolve.
+#   ./check.sh terraform   tofu fmt -check on every *.tf file, and tofu init (no backend, locked
+#                          providers) and validate in each root (a folder with .terraform.lock.hcl).
+#                          Fetches providers (needs network).
 #   ./check.sh provisioning  Runs the provisioning install.sh for each tests/infratructure/.../debian13/{pass,fail}-*.txt
 #                          case with stub ssh and scp: the output, the remote calls, the copied
 #                          seed, and any seed ISO must match the case's "# expect" lines.
@@ -26,8 +30,8 @@
 #   ./check.sh nodes       Docker: the functions install.sh runs on the nodes, in debian:13 with
 #                          a microk8s stub and fake RKE2 token files.
 #
-# Needs bash, jq, helm, dash, and ruby or python3 with PyYAML. shellcheck is optional
-# locally (a notice is printed) and required when CI=true. The Docker groups take about a
+# Needs bash, jq, helm, dash, and ruby or python3 with PyYAML. shellcheck and tofu (OpenTofu,
+# pinned in mise.toml) are optional locally (a notice is printed) and required when CI=true. The Docker groups take about a
 # minute, so the default run includes them only when CI=true; run them locally by name.
 set -euo pipefail
 export LC_ALL=C  # English messages from bash and tools, whatever the local language
@@ -38,7 +42,7 @@ provisioning_dir="$repo_root/infratructure/on-premises/virtual-machine/debian13"
 failures=0
 
 usage() {
-  echo "Usage: $0 [scripts|seeds|charts|cases|format|provisioning|usage|schema|nodes]" >&2
+  echo "Usage: $0 [scripts|seeds|charts|cases|format|terraform|provisioning|usage|schema|nodes]" >&2
   exit 2
 }
 
@@ -99,6 +103,8 @@ check_scripts() {
     [[ -s "$file" ]] || continue
     bash -n "$file" || fail "bash -n ${file#"$repo_root"/}"
     grep -q '^export LC_ALL=C' "$file" || fail "${file#"$repo_root"/}: missing 'export LC_ALL=C' (English output)"
+    # kubectl cannot open /dev/stdin when the script runs over SSH; use a private temp file.
+    [[ "$file" == "$script_dir/check.sh" ]] || ! grep -q -- '--from-file=[^[:space:]]*=/dev/stdin' "$file" || fail "${file#"$repo_root"/}: kubectl --from-file=...=/dev/stdin fails over SSH; use a temp file"
     if [[ "$have_shellcheck" == true ]]; then
       shellcheck -S warning "$file" || fail "shellcheck ${file#"$repo_root"/}"
     fi
@@ -256,6 +262,37 @@ check_format() {
     done < <(grep -oE '\]\([^)[:space:]]+\)' "$repo_root/$file" | sed -E 's/^\]\(//; s/\)$//')
   done < <(git -C "$repo_root" ls-files --cached --others --exclude-standard -- '*.md')
   [[ "$failures" -gt "$before" ]] || echo "ok Markdown links"
+}
+
+# Checks the OpenTofu code without credentials or state: formatting, then init and validate in
+# each root module with a throwaway data folder, so nothing is written next to the code.
+check_terraform() {
+  local lock root tmp
+  echo "==> terraform"
+  if ! command -v tofu >/dev/null || ! tofu version >/dev/null 2>&1; then
+    [[ "${CI:-}" != true ]] || { echo "tofu is required in CI" >&2; exit 1; }
+    echo "Notice: tofu not available; skipping it (mise install, see mise.toml, to match CI)."
+    return 0
+  fi
+  tofu fmt -check -recursive "$repo_root/infratructure" >/dev/null || fail "tofu fmt: run tofu fmt -recursive infratructure"
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/homelab-tofu.XXXXXX")"
+  # shellcheck disable=SC2064 # expand now: tmp is local and gone when the trap fires
+  trap "rm -rf '$tmp'" EXIT
+  while IFS= read -r lock; do
+    root="$(dirname "$lock")"
+    rm -rf "$tmp/data"
+    if ! TF_DATA_DIR="$tmp/data" tofu -chdir="$root" init -backend=false -lockfile=readonly -input=false -no-color >"$tmp/init.log" 2>&1; then
+      fail "tofu init ${root#"$repo_root"/}: $(tail -n 3 "$tmp/init.log")"
+      continue
+    fi
+    if TF_DATA_DIR="$tmp/data" tofu -chdir="$root" validate -no-color >/dev/null; then
+      echo "ok ${root#"$repo_root"/}"
+    else
+      fail "tofu validate ${root#"$repo_root"/}"
+    fi
+  done < <(repo_files .terraform.lock.hcl)
+  rm -rf "$tmp"
+  trap - EXIT
 }
 
 # Fails unless Docker can run containers.
@@ -586,7 +623,7 @@ check_usage() {
 
 case "${1:-all}" in
   all)
-    check_scripts; check_seeds; check_charts; check_cases; check_format; check_provisioning; check_usage
+    check_scripts; check_seeds; check_charts; check_cases; check_format; check_terraform; check_provisioning; check_usage
     if [[ "${CI:-}" == true ]]; then
       check_schema; check_nodes
     else
@@ -597,6 +634,7 @@ case "${1:-all}" in
   charts) check_charts ;;
   cases) check_cases ;;
   format) check_format ;;
+  terraform) check_terraform ;;
   provisioning) check_provisioning ;;
   usage) check_usage ;;
   schema) check_schema ;;

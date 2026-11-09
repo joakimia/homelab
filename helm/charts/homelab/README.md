@@ -35,6 +35,7 @@ helm uninstall homepage --namespace hlab-frontend-apps
 | Value | Default | Purpose |
 |---|---|---|
 | `homelab-frontend.filesConfigMap` | `homepage-static-assets` | ConfigMap made from `static-assets/`. |
+| `homelab-frontend.siteName` | `joakimia homelab` | Name in the start page's title, header, and footer. The page is public. |
 | `homelab-frontend.links.<id>` | the UIs in both profiles; `longhorn` off | `title`, `url`, `enabled` of each link on the start page; a profile overrides fields by key or adds links. |
 | `homelab-frontend.ingress.catchAll` | `true` | `http://<node-ip>:8080/` opens the homepage too; off with `ingress.auth`. |
 | `homelab-periodic-cleanup.enabled` | `true` | Install the cleanup CronJob. |

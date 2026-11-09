@@ -1,0 +1,104 @@
+# Ingress hostname. authentik builds its URLs from the request's Host header, so the URL
+# users see is https://<host>:8443/ locally, or https://<host>/ behind a tunnel on port 443.
+host: auth.homelab.com
+
+ingress:
+  className: traefik
+  # Certificate for host from cert-manager (needs the cert-manager and cert-issuers charts).
+  tls:
+    enabled: true
+    clusterIssuer: homelab-ca
+
+# Upstream chart values go under the dependency name.
+authentik:
+  # Service authentik-server, port 80 (the Ingress uses fullnameOverride and
+  # server.service.servicePortHttp).
+  fullnameOverride: authentik
+  global:
+    # Credentials from the Secrets scripts/install.sh creates; env wins over the upstream
+    # Secret (envFrom), which holds only the non-secret settings below.
+    env:
+      - name: AUTHENTIK_SECRET_KEY
+        valueFrom:
+          secretKeyRef:
+            name: authentik-credentials
+            key: secret-key
+      # Read on first start only: creates akadmin with this email and password.
+      - name: AUTHENTIK_BOOTSTRAP_EMAIL
+        valueFrom:
+          secretKeyRef:
+            name: authentik-credentials
+            key: bootstrap-email
+      - name: AUTHENTIK_BOOTSTRAP_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: authentik-credentials
+            key: bootstrap-password
+      - name: AUTHENTIK_POSTGRESQL__PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: authentik-postgres
+            key: PASSWORD
+    # Pod security context of the server and the worker (the image's authentik user).
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+    # The root filesystem is read-only; temporary files go here and to /dev/shm.
+    volumes:
+      - name: tmp
+        emptyDir: {}
+    volumeMounts:
+      - name: tmp
+        mountPath: /tmp
+  # Rendered into the upstream authentik Secret as AUTHENTIK_* variables. Never put
+  # secret_key or postgresql.password here (the schema rejects them).
+  authentik:
+    log_level: info
+    error_reporting:
+      enabled: false
+    # The postgres chart's database and role (roles.authentik and databases.authentik there).
+    postgresql:
+      host: postgres.hlab-database.svc.cluster.local
+      port: 5432
+      name: authentik
+      user: authentik
+  server:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: [ALL]
+    # No Kubernetes API access (see serviceAccount).
+    automountServiceAccountToken: false
+  worker:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 384Mi
+      limits:
+        memory: 1Gi
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop: [ALL]
+    automountServiceAccountToken: false
+  # Off: the worker would get RBAC to deploy outposts and read Secrets in its namespace,
+  # which it shares with cert-manager. The embedded outpost needs none of it.
+  serviceAccount:
+    create: false
+  # The bundled PostgreSQL stays off; the in-cluster postgres chart is used instead.
+  postgresql:
+    enabled: false

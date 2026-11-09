@@ -1,0 +1,5 @@
+# authentik in hlab-platform: only Traefik may connect, and it may reach PostgreSQL.
+# expect: name: allow-traefik-to-authentik
+# expect: namespace: hlab-platform
+# expect: kubernetes.io/metadata.name: hlab-platform
+# expect: app.kubernetes.io/name: authentik

@@ -1,0 +1,10 @@
+# The RKE2 overlay: public host behind Cloudflare Tunnel, Let's Encrypt certificate.
+# expect: cert-manager.io/cluster-issuer: "letsencrypt"
+# expect: - host: "authentik.joakimia.dev"
+# expect: secretName: authentik-tls
+# expect: name: authentik-server
+# expect: number: 80
+host: authentik.joakimia.dev
+ingress:
+  tls:
+    clusterIssuer: letsencrypt
