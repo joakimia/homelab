@@ -22,6 +22,14 @@ argo-cd:
       application.resourceTrackingMethod: annotation
       # Read-only anonymous access stays off; log in as admin (argocd-initial-admin-secret).
       users.anonymous.enabled: "false"
+      # Traefik listens on host ports and publishes no address in Ingress status, which Argo CD
+      # reads as "Progressing" forever. An Ingress is healthy once it exists; Traefik and
+      # cert-manager report real problems on their own resources.
+      resource.customizations.health.networking.k8s.io_Ingress: |
+        hs = {}
+        hs.status = "Healthy"
+        hs.message = "Served by Traefik on host ports (no load balancer status)"
+        return hs
     params:
       # TLS ends at Traefik.
       server.insecure: true

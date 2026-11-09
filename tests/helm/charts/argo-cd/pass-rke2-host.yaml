@@ -3,6 +3,7 @@
 # expect: cert-manager.io/cluster-issuer: "letsencrypt"
 # expect: server.insecure: "true"
 # expect: name: argocd-repo-longhorn
+# expect: resource.customizations.health.networking.k8s.io_Ingress
 host: argocd.joakimia.dev
 ingress:
   tls:

@@ -24,6 +24,7 @@ Change it in the UI (User Info → Update password), then delete `argocd-initial
 
 - The server speaks plain HTTP (`server.insecure`); Traefik terminates TLS with this chart's own Ingress.
 - Resources are tracked by annotation, so Argo CD adopts what `deploy.sh` (Helm) installed earlier.
+- Ingresses count as healthy once they exist: Traefik uses host ports and publishes no load balancer address, which Argo CD would otherwise show as Progressing forever.
 - Argo CD runs `helm dependency build` itself. HTTPS Helm repositories must be listed in `argo-cd.configs.repositories` (`tests/check.sh charts` checks this); OCI repositories need no entry.
 - Argo CD renders charts with `helm template`, so `lookup` returns nothing. The charts' Secret checks are skipped, and Secrets are still created by the install scripts (`deploy.sh` once per cluster).
 
